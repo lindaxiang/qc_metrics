@@ -247,7 +247,6 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
             analysis = json.loads(fline)
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] == file_type_map[file_type][0]: continue
-            if not analysis['studyId'] == "LUCA-KR": continue
             for fl in analysis['files']:
                 if fl['fileName'] in downloaded: continue
                 if not fl['dataType'] == file_type_map[file_type][1]: continue
@@ -467,7 +466,7 @@ def main():
     download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
 
     # annotate the vcf with gnomad AF
-    #annot_vcf(args.cpu_number, args.conf)
+    annot_vcf(args.cpu_number, args.conf)
 
     # process the annot_vcf
     sanger_job_stats = process_annot_vcf(sanger_job_stats, args.af_threshold)
