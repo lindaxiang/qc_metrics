@@ -288,19 +288,22 @@ def annot_vcf(cores, conf):
         run_cmd(cmd)
 
 def get_gnomad_overlap(vcf, af_threshold):
-    bcftools = f"bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER\t%gnomad_af\t%gnomad_filter\n' {vcf} " 
-    grep = f"grep 'PASS' > gnomad_af.txt"
-    cmd = ' | '.join([bcftools, grep])
-    run_cmd(cmd)
+    bcftools = f"bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%FILTER\t%gnomad_af\t%gnomad_filter\n' {vcf} > gnomad_af.txt" 
+    # grep = f"grep 'PASS' > gnomad_af.txt"
+    # cmd = ' | '.join([bcftools, grep])
+    run_cmd(bcftools)
 
     df = pd.read_table('gnomad_af.txt', sep='\t', \
          names=["CHROM", "POS", "REF", "ALT", "FILTER", "gnomad_af", "gnomad_filter"], \
          dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "FILTER": str, "gnomad_af": float, "gnomad_filter": str}, \
          na_values=".")
-    somatic_total = df.shape[0]
+    somatic_pass_total = df.loc[df['FILTER']=="PASS"].shape[0]
     gnomad_af = {}
     for t in af_threshold:
-        gnomad_af['t_'+str(t).replace('.', '_')] = round(df.loc[df['gnomad_af'] > t, :].shape[0]/somatic_total, 3)
+        if somatic_pass_total > 0:
+            gnomad_af['t_'+str(t).replace('.', '_')] = round(df.loc[df['gnomad_af'] > t, :].shape[0]/somatic_pass_total, 3)
+        else:
+            gnomad_af['t_'+str(t).replace('.', '_')] = None
 
     return gnomad_af
 
