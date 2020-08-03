@@ -277,13 +277,13 @@ def annot_vcf(cores, conf):
         annotated.append(os.path.basename(fn))
 
     for fp in glob.glob(os.path.join(data_dir, "*.vcf.gz")):
-        basename = re.sub(r'\.gz$', '', os.path.basename(fp))
+        basename = os.path.basename(fp)
         
         if basename in annotated: continue
 
         vcfanno = f'vcfanno -p {cores} {conf} {fp}'
-        bgzip = f'bgzip > {annot_dir}/{basename}.gz'
-        tabix = f'tabix -p vcf {annot_dir}/{basename}.gz'
+        bgzip = f'bgzip > {annot_dir}/{basename}'
+        tabix = f'tabix -p vcf {annot_dir}/{basename}'
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
