@@ -60,6 +60,8 @@ json2tsv_fields_map = {
     'BRASS_max_memory_usage_per_core': 'timing.BRASS.maximum_memory_usage_per_core',
     'ascat_cpu_hours': 'timing.ascat.cpu_hours',
     'ascat_max_memory_usage_per_core': 'timing.ascat.maximum_memory_usage_per_core',
+    'snv_somatic_pass_total': 'gnomad_overlap.snv.somatic_pass_total',
+    'indel_somatic_pass_total': 'gnomad_overlap.indel.somatic_pass_total',
     'gnomad_overlap_snv_t_0': 'gnomad_overlap.snv.t_0',
     'gnomad_overlap_snv_t_0.001': 'gnomad_overlap.snv.t_0_001',
     'gnomad_overlap_snv_t_0.01': 'gnomad_overlap.snv.t_0_01',
@@ -235,11 +237,9 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
     }
 
     data_dir = os.path.join("data", file_type_map[file_type][0])
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
 
     downloaded = []
-    for fn in glob.glob(os.path.join(data_dir, "*.*")):
+    for fn in glob.glob(os.path.join(data_dir, "*-*", "*.*"), recursive=True):
         downloaded.append(os.path.basename(fn))
 
     with open(song_dump, 'r') as fp:
@@ -247,6 +247,10 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
             analysis = json.loads(fline)
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] == file_type_map[file_type][0]: continue
+            output_dir = os.path.join(data_dir, analysis['studyId'])
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
             for fl in analysis['files']:
                 if fl['fileName'] in downloaded: continue
                 if not fl['dataType'] == file_type_map[file_type][1]: continue
@@ -261,7 +265,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
                     -e TRANSPORT_PARALLEL -e TRANSPORT_MEMORY \
                     -v "$PWD":"$PWD" -w "$PWD" overture/score:latest /score-client/bin/score-client download \
                     --study-id %s --object-id %s --output-dir %s' \
-                    % (ACCESSTOKEN, METADATA_URL, STORAGE_URL, fl['studyId'], fl['objectId'], data_dir)
+                    % (ACCESSTOKEN, METADATA_URL, STORAGE_URL, fl['studyId'], fl['objectId'], output_dir)
 
                 run_cmd(cmd)
 
@@ -269,21 +273,22 @@ def annot_vcf(cores, conf):
 
     data_dir = "data/variant_calling"
     annot_dir = os.path.join("data", "annot_vcf")
-    if not os.path.exists(annot_dir):
-        os.makedirs(annot_dir)
 
     annotated = []
-    for fn in glob.glob(os.path.join(annot_dir, "*.*")):
+    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
         annotated.append(os.path.basename(fn))
 
-    for fp in glob.glob(os.path.join(data_dir, "*.vcf.gz")):
+    for fp in glob.glob(os.path.join(data_dir, "*-*", "*.vcf.gz"), recursive=True):
         basename = os.path.basename(fp)
-        
         if basename in annotated: continue
 
+        study_id = basename.split('.')[0]
+        if not os.path.exists(os.path.join(annot_dir, study_id)):
+            os.makedirs(os.path.join(annot_dir, study_id))
+
         vcfanno = f'vcfanno -p {cores} {conf} {fp}'
-        bgzip = f'bgzip > {annot_dir}/{basename}'
-        tabix = f'tabix -p vcf {annot_dir}/{basename}'
+        bgzip = f'bgzip > {annot_dir}/{study_id}/{basename}'
+        tabix = f'tabix -p vcf {annot_dir}/{study_id}/{basename}'
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
@@ -301,7 +306,9 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
          dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "FILTER": str, "gnomad_af": float, "gnomad_filter": str}, \
          na_values=".")
     somatic_pass_total = df.loc[df['FILTER']=="PASS"].shape[0]
-    gnomad_af = {}
+    gnomad_af = {
+        "somatic_pass_total": somatic_pass_total
+    }
     for t in af_threshold:
         if somatic_pass_total > 0:
             gnomad_af['t_'+str(t).replace('.', '_')] = round(df.loc[(df['gnomad_af'] > t) & (df['FILTER']=="PASS"), :].shape[0]/somatic_pass_total, 3)
@@ -314,10 +321,10 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
 def process_annot_vcf(sanger_job_stats, af_threshold):
     annot_dir = os.path.join("data", "annot_vcf")
     annotated = []
-    for fn in glob.glob(os.path.join(annot_dir, "*.*")):
+    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
         annotated.append(os.path.basename(fn))
 
-    for vcf in glob.glob(os.path.join(annot_dir, '*.vcf.gz')):
+    for vcf in glob.glob(os.path.join(annot_dir, "*-*", '*.vcf.gz'), recursive=True):
         tumour_sample_id = os.path.basename(vcf).split('.')[2]
         data_type = os.path.basename(vcf).split('.')[7] 
 
