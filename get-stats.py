@@ -327,8 +327,9 @@ def process_annot_vcf(sanger_job_stats, af_threshold):
     for vcf in glob.glob(os.path.join(annot_dir, "*-*", '*.vcf.gz'), recursive=True):
         tumour_sample_id = os.path.basename(vcf).split('.')[2]
         data_type = os.path.basename(vcf).split('.')[7] 
-
-        sanger_job_stats[tumour_sample_id]['gnomad_overlap'] = {}
+        
+        if not 'gnomad_overlap' in sanger_job_stats[tumour_sample_id]:
+            sanger_job_stats[tumour_sample_id]['gnomad_overlap'] = {}
         sanger_job_stats[tumour_sample_id]['gnomad_overlap'][data_type] = {}
         gnomad = get_gnomad_overlap(vcf, af_threshold, annotated)
         sanger_job_stats[tumour_sample_id]['gnomad_overlap'][data_type].update(gnomad)
