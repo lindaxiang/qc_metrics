@@ -429,7 +429,7 @@ def get_timing(fname, experimental_strategy):
 
 def process_timing_supplement(sanger_job_stats):
     supplement_dir = os.path.join("data", 'variant_calling_supplement')
-    for tgz in glob.glob(os.path.join(supplement_dir, '*.timings-supplement.tgz')):
+    for tgz in glob.glob(os.path.join(supplement_dir, '*-*', '*.timings-supplement.tgz')):
         tumour_sample_id = os.path.basename(tgz).split('.')[2]
         experimental_strategy = os.path.basename(tgz).split('.')[3]
 
