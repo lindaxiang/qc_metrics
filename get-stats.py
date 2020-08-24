@@ -69,7 +69,15 @@ json2tsv_fields_map = {
     'gnomad_overlap_indel_t_0': 'gnomad_overlap.indel.t_0',
     'gnomad_overlap_indel_t_0.001': 'gnomad_overlap.indel.t_0_001',
     'gnomad_overlap_indel_t_0.01': 'gnomad_overlap.indel.t_0_01',
-    'gnomad_overlap_indel_t_0.1': 'gnomad_overlap.indel.t_0_1'
+    'gnomad_overlap_indel_t_0.1': 'gnomad_overlap.indel.t_0_1',
+    'gnomad_overlap_snv_t_0_count': 'gnomad_overlap.snv.t_0_count',
+    'gnomad_overlap_snv_t_0.001_count': 'gnomad_overlap.snv.t_0_001_count',
+    'gnomad_overlap_snv_t_0.01_count': 'gnomad_overlap.snv.t_0_01_count',
+    'gnomad_overlap_snv_t_0.1_count': 'gnomad_overlap.snv.t_0_1_count',
+    'gnomad_overlap_indel_t_0_count': 'gnomad_overlap.indel.t_0_count',
+    'gnomad_overlap_indel_t_0.001_count': 'gnomad_overlap.indel.t_0_001_count',
+    'gnomad_overlap_indel_t_0.01_count': 'gnomad_overlap.indel.t_0_01_count',
+    'gnomad_overlap_indel_t_0.1_count': 'gnomad_overlap.indel.t_0_1_count'
 }
 
 total_size = {
@@ -310,8 +318,9 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
         "somatic_pass_total": somatic_pass_total
     }
     for t in af_threshold:
+        gnomad_af['t_'+str(t).replace('.', '_')+'_count'] = df.loc[(df['gnomad_af'] > t) & (df['FILTER']=="PASS"), :].shape[0]
         if somatic_pass_total > 0:
-            gnomad_af['t_'+str(t).replace('.', '_')] = round(df.loc[(df['gnomad_af'] > t) & (df['FILTER']=="PASS"), :].shape[0]/somatic_pass_total, 3)
+            gnomad_af['t_'+str(t).replace('.', '_')] = round(gnomad_af['t_'+str(t).replace('.', '_')+'_count']/somatic_pass_total, 3)
         else:
             gnomad_af['t_'+str(t).replace('.', '_')] = None
 
