@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 
 
-json2tsv_fields_map = {
+variant_calling_stats_fields = {
     'donor_id': 'donor_id',
     'study_id': 'study_id',
     'gender': 'gender',
@@ -23,43 +23,44 @@ json2tsv_fields_map = {
     'normal_aligned': 'flags.normal_aligned',
     'tumour_aligned': 'flags.tumour_aligned',
     'sanger_called': 'flags.sanger_called',
+    'is_pcawg': 'flags.is_pcawg',
     'normal_sample_id': 'normal.sample_id',
-    'normal_file_size_gb': 'normal.file_size',
-    'normal_error_rate': 'normal.error_rate',
-    'normal_duplicate_rate': 'normal.duplicate_rate',
-    'normal_pairs_on_different_chromosomes': 'normal.pairs_on_different_chromosomes',
-    'normal_pairs_on_different_chromosomes_rate': 'normal.pairs_on_different_chromosomes_rate',
-    'normal_oxoQ_score': 'normal.oxoQ_score',
-    'normal_avg_depth': 'normal.avg_depth',
-    'normal_estimated_coverage': 'normal.estimated_coverage',
-    'normal_contamination': 'normal.contamination',
-    'normal_properly_paired_reads': 'normal.properly_paired_reads',
-    'normal_total_reads': 'normal.total_reads',
+    'normal_file_size_gb': 'normal.alignment.file_size',
+    'normal_error_rate': 'normal.alignment.error_rate',
+    'normal_duplicate_rate': 'normal.alignment.duplicate_rate',
+    'normal_pairs_on_different_chromosomes': 'normal.alignment.pairs_on_different_chromosomes',
+    'normal_pairs_on_different_chromosomes_rate': 'normal.alignment.pairs_on_different_chromosomes_rate',
+    'normal_oxoQ_score': 'normal.alignment.oxoQ_score',
+    'normal_avg_depth': 'normal.sanger.contamination.avg_depth',
+    'normal_estimated_coverage': 'normal.alignment.estimated_coverage',
+    'normal_contamination': 'normal.sanger.contamination.contamination',
+    'normal_properly_paired_reads': 'normal.alignment.properly_paired_reads',
+    'normal_total_reads': 'normal.alignment.total_reads',
     'tumour_sample_id': 'tumour.sample_id',
-    'tumour_file_size_gb': 'tumour.file_size',
-    'tumour_error_rate': 'tumour.error_rate',
-    'tumour_duplicate_rate': 'tumour.duplicate_rate',
-    'tumour_pairs_on_different_chromosomes': 'tumour.pairs_on_different_chromosomes',
-    'tumour_pairs_on_different_chromosomes_rate': 'tumour.pairs_on_different_chromosomes_rate',
-    'tumour_oxoQ_score': 'tumour.oxoQ_score',
-    'tumour_avg_depth': 'tumour.avg_depth',
-    'tumour_estimated_coverage': 'tumour.estimated_coverage',
-    'tumour_contamination': 'tumour.contamination',
-    'tumour_properly_paired_reads': 'tumour.properly_paired_reads',
-    'tumour_total_reads': 'tumour.total_reads',
-    'ascat_normal_contamination': 'ascat_metrics.NormalContamination',
-    'ascat_ploidy': 'ascat_metrics.Ploidy',
-    'ascat_goodnessOfFit': 'ascat_metrics.goodnessOfFit',
-    'ascat_psi': 'ascat_metrics.psi',
-    'ascat_purity': 'ascat_metrics.rho',
-    'cgpPindel_cpu_hours': 'timing.cgpPindel.cpu_hours',
-    'cgpPindel_max_memory_usage_per_core': 'timing.cgpPindel.maximum_memory_usage_per_core', 
-    'CaVEMan_cpu_hours': 'timing.CaVEMan.cpu_hours',
-    'CaVEMan_max_memory_usage_per_core': 'timing.CaVEMan.maximum_memory_usage_per_core',
-    'BRASS_cpu_hours': 'timing.BRASS.cpu_hours',
-    'BRASS_max_memory_usage_per_core': 'timing.BRASS.maximum_memory_usage_per_core',
-    'ascat_cpu_hours': 'timing.ascat.cpu_hours',
-    'ascat_max_memory_usage_per_core': 'timing.ascat.maximum_memory_usage_per_core',
+    'tumour_file_size_gb': 'tumour.alignment.file_size',
+    'tumour_error_rate': 'tumour.alignment.error_rate',
+    'tumour_duplicate_rate': 'tumour.alignment.duplicate_rate',
+    'tumour_pairs_on_different_chromosomes': 'tumour.alignment.pairs_on_different_chromosomes',
+    'tumour_pairs_on_different_chromosomes_rate': 'tumour.alignment.pairs_on_different_chromosomes_rate',
+    'tumour_oxoQ_score': 'tumour.alignment.oxoQ_score',
+    'tumour_avg_depth': 'tumour.sanger.contamination.avg_depth',
+    'tumour_estimated_coverage': 'tumour.alignment.estimated_coverage',
+    'tumour_contamination': 'tumour.sanger.contamination.contamination',
+    'tumour_properly_paired_reads': 'tumour.alignment.properly_paired_reads',
+    'tumour_total_reads': 'tumour.alignment.total_reads',
+    'ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
+    'ascat_ploidy': 'tumour.sanger.ascat_metrics.Ploidy',
+    'ascat_goodnessOfFit': 'tumour.sanger.ascat_metrics.goodnessOfFit',
+    'ascat_psi': 'tumour.sanger.ascat_metrics.psi',
+    'ascat_purity': 'tumour.sanger.ascat_metrics.rho',
+    'cgpPindel_cpu_hours': 'tumour.sanger.timing.cgpPindel.cpu_hours',
+    'cgpPindel_max_memory_usage_per_core': 'tumour.sanger.timing.cgpPindel.maximum_memory_usage_per_core', 
+    'CaVEMan_cpu_hours': 'tumour.sanger.timing.CaVEMan.cpu_hours',
+    'CaVEMan_max_memory_usage_per_core': 'tumour.sanger.timing.CaVEMan.maximum_memory_usage_per_core',
+    'BRASS_cpu_hours': 'tumour.sanger.timing.BRASS.cpu_hours',
+    'BRASS_max_memory_usage_per_core': 'tumour.sanger.timing.BRASS.maximum_memory_usage_per_core',
+    'ascat_cpu_hours': 'tumour.sanger.timing.ascat.cpu_hours',
+    'ascat_max_memory_usage_per_core': 'tumour.sanger.timing.ascat.maximum_memory_usage_per_core',
     'snv_somatic_pass_total': 'gnomad_overlap.snv.somatic_pass_total',
     'indel_somatic_pass_total': 'gnomad_overlap.indel.somatic_pass_total',
     'gnomad_overlap_snv_t_0': 'gnomad_overlap.snv.t_0',
@@ -79,6 +80,43 @@ json2tsv_fields_map = {
     'gnomad_overlap_indel_t_0.01_count': 'gnomad_overlap.indel.t_0_01_count',
     'gnomad_overlap_indel_t_0.1_count': 'gnomad_overlap.indel.t_0_1_count'
 }
+
+pcawg_qc_fields = {
+    'donor_id': 'donor_id',
+    'study_id': 'study_id',
+    'gender': 'gender',
+    'experimental_strategy': 'experimental_strategy',
+    'sanger_called': 'flags.sanger_called',
+    'is_pcawg': 'flags.is_pcawg',
+    'normal_sample_id': 'normal.sample_id',
+    'tumour_sample_id': 'tumour.sample_id',
+    'ARGO_alignment_normal_insert_size_mean': 'normal.alignment.average_insert_size',
+    'ARGO_alignment_tumour_insert_size_mean': 'tumour.alignment.average_insert_size',
+    'ARGO_alignment_normal_insert_size_sd': 'normal.alignment.insert_size_sd',
+    'ARGO_alignment_tumour_insert_size_sd': 'tumour.alignment.insert_size_sd',
+    'ARGO_alignment_normal_pairs_on_different_chromosomes_rate': 'normal.alignment.pairs_on_different_chromosomes_rate',
+    'ARGO_alignment_tumour_pairs_on_different_chromosomes_rate': 'tumour.alignment.pairs_on_different_chromosomes_rate',
+    'ARGO_sanger_normal_contamination': 'normal.sanger.contamination.contamination',
+    'PCAWG_sanger_normal_contamination': 'pcawg.normal.sanger.contamination.contamination',
+    'ARGO_sanger_tumour_contamination': 'tumour.sanger.contamination.contamination',
+    'PCAWG_sanger_tumour_contamination': 'pcawg.tumour.sanger.contamination.contamination',
+    'PCAWG_broad_tumour_contamination': 'pcawg.tumour.broad.contamination',
+    'ARGO_sanger_ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
+    'PCAWG_sanger_ascat_normal_contamination': 'pcawg.tumour.sanger.ascat_metrics.NormalContamination',
+    'ARGO_sanger_ascat_ploidy': 'tumour.sanger.ascat_metrics.Ploidy',
+    'PCAWG_sanger_ascat_ploidy': 'pcawg.tumour.sanger.ascat_metrics.Ploidy',
+    'ARGO_sanger_normal_avg_depth': 'normal.sanger.contamination.avg_depth',
+    'PCAWG_sanger_normal_avg_depth': 'pcawg.normal.sanger.contamination.avg_depth',
+    'ARGO_sanger_tumour_avg_depth': 'tumour.sanger.contamination.avg_depth',
+    'PCAWG_sanger_tumour_avg_depth': 'pcawg.tumour.sanger.contamination.avg_depth',
+    'ARGO_sanger_ascat_goodnessOfFit': 'tumour.sanger.ascat_metrics.goodnessOfFit',
+    'PCAWG_sanger_ascat_goodnessOfFit': 'pcawg.tumour.sanger.ascat_metrics.goodnessOfFit',
+    'ARGO_sanger_ascat_psi': 'tumour.sanger.ascat_metrics.psi',
+    'PCAWG_sanger_ascat_psi': 'pcawg.tumour.sanger.ascat_metrics.psi',
+    'ARGO_sanger_ascat_purity': 'tumour.sanger.ascat_metrics.rho',
+    'PCAWG_sanger_ascat_purity': 'pcawg.tumour.sanger.ascat_metrics.rho' 
+}
+
 
 total_size = {
     'wgs': 3200000000,
@@ -120,7 +158,82 @@ def get_dict_value(fields, json_obj, field_map):
         tsv_obj[f] = value
     return tsv_obj 
 
-def process_qc_metrics(song_dump, sanger_job_stats):
+
+def add_pcawg_info(variant_calling_stats, pcawg_sample_sheet, pcawg_sanger_qc, pcawg_broad_qc):
+    pcawg_sample_info = {}
+    with open(pcawg_sample_sheet, 'r') as fp:
+        reader = csv.DictReader(fp, delimiter='\t')
+        for row in reader:
+            if not row.get('library_strategy') == "WGS": continue
+            if pcawg_sample_info.get(row.get('aliquot_id')): continue
+            pcawg_sample_info[row.get('aliquot_id')] = row.get('icgc_sample_id')
+
+    pcawg_sample_qc = {}
+    with open(pcawg_sanger_qc, 'r') as fp:
+        for fline in fp:
+            sanger_qc = json.loads(fline)
+            for key, value in sanger_qc.items():
+                if not key in pcawg_sample_info: continue
+                if pcawg_sample_info[key] in pcawg_sample_qc: continue
+                pcawg_sample_qc[pcawg_sample_info[key]] = {}
+                pcawg_sample_qc[pcawg_sample_info[key]]['sanger'] = {}
+                value['contamination'][key].pop('by_readgroup')
+                pcawg_sample_qc[pcawg_sample_info[key]]['sanger'].update({'contamination': value['contamination'][key]})
+                if 'cnv' in value: 
+                    pcawg_sample_qc[pcawg_sample_info[key]]['sanger'].update({'ascat_metrics': value.get('cnv')})
+    
+    with open(pcawg_broad_qc, 'r') as fp:
+        reader = csv.DictReader(fp, delimiter='\t')
+        for row in reader:
+            if not row.get('aliquot_GUUID') in pcawg_sample_info: continue
+            sample_id = pcawg_sample_info[row.get('aliquot_GUUID')]
+            if not sample_id in pcawg_sample_qc: 
+                pcawg_sample_qc[sample_id] = {}
+            pcawg_sample_qc[sample_id]['broad'] = {
+                'contamination': float(row.get('contamination_percentage_whole_genome_no_array_value'))/100 if row.get('contamination_percentage_whole_genome_no_array_value') else None,
+                'oxoQ': row.get('picard_oxoQ') if row.get('picard_oxoQ') else None,
+                'callable': row.get('somatic_mutation_covered_bases_wgs') if row.get('somatic_mutation_covered_bases_wgs') else None
+            }
+
+    for key, value in variant_calling_stats.items():
+        value['flags']['is_pcawg'] = False
+        if not key in pcawg_sample_qc: continue
+        value['flags']['is_pcawg'] = True
+        value['pcawg'] = {}
+        value['pcawg']['tumour'] = pcawg_sample_qc.get(key)
+        if not 'sample_id' in value['normal']: continue
+        if value['normal']['sample_id'] in pcawg_sample_qc:
+            value['pcawg']['normal'] = pcawg_sample_qc.get(value['normal']['sample_id'])
+        
+    return variant_calling_stats
+
+def get_extra_metrics(fname, extra_metrics, metrics):
+    if not os.path.isfile(fname): 
+        return metrics
+    collected_sum_fields = {
+        'insert size standard deviation': 'insert_size_sd'
+    }
+    
+    unzip_dir = 'data/qc_metrics/unzip'
+    if os.path.isdir(unzip_dir): 
+        cmd = 'rm -rf %s && mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, unzip_dir, fname)
+    else:
+        cmd = 'mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, fname)
+    run_cmd(cmd)
+
+    for fn in glob.glob(os.path.join(unzip_dir, '*.aln.cram.bamstat')):    
+        with open(fn, 'r') as f:
+            for row in f:
+                if not row.startswith('SN\t'): continue
+                cols = row.replace(':', '').strip().split('\t')
+
+                if not cols[1] in collected_sum_fields: continue
+                metrics.update({
+                    collected_sum_fields[cols[1]]: float(cols[2]) if ('.' in cols[2] or 'e' in cols[2]) else int(cols[2])
+                    })
+        return metrics
+
+def process_qc_metrics(song_dump, variant_calling_stats):
     sample_map = {}
     with open(song_dump, 'r') as fp:
         for fline in fp:
@@ -135,7 +248,7 @@ def process_qc_metrics(song_dump, sanger_job_stats):
             donorId = analysis['samples'][0]['donor']['donorId']
             gender = analysis['samples'][0]['donor']['gender']
             experimental_strategy = analysis['experiment']['experimental_strategy']
-            if not sanger_job_stats.get(sampleId): sanger_job_stats[sampleId] = {
+            if not variant_calling_stats.get(sampleId): variant_calling_stats[sampleId] = {
                 'study_id': analysis['studyId'],
                 'donor_id': donorId,
                 'gender': gender,
@@ -143,39 +256,48 @@ def process_qc_metrics(song_dump, sanger_job_stats):
                 'flags': {
                     'normal_aligned': False,
                     'tumour_aligned': False,
-                    'sanger_called': False
+                    'sanger_called': False,
+                    'mutect_called': False
                 },
-                'normal': {},
+                'normal': {
+                    'alignment': {},
+                    'sanger': {
+                        'contamination': {}
+                    },
+                    'mutect2': {}
+                },
                 'tumour': {
-                    'sample_id': sampleId
-                },
-                'ascat_metrics': {}
+                    'sample_id': sampleId,
+                    'alignment': {},
+                    'sanger': {
+                        'contamination': {},
+                        'ascat_metrics': {},
+                        'genotype_inference': {}
+                    },
+                    'mutect2': {}
                 }
+            }
 
             if analysis['analysisType']['name'] == 'variant_calling':
-                sanger_job_stats[sampleId]['flags']['sanger_called'] = True
+                variant_calling_stats[sampleId]['flags']['sanger_called'] = True
             elif analysis['analysisType']['name'] == 'sequencing_alignment':
-                sanger_job_stats[sampleId]['flags']['tumour_aligned'] = True 
+                variant_calling_stats[sampleId]['flags']['tumour_aligned'] = True 
             elif not analysis['analysisType']['name'] == 'qc_metrics': 
                 continue
 
             for fl in analysis['files']:
                 if fl['dataType'] == 'Cross Sample Contamination':
-                    fl['info']['metrics'].pop('snps_used')
-                    fl['info']['metrics'].pop('reads_used')
                     if fl['info']['metrics']['sample_id'] == sampleId:
-                        sanger_job_stats[sampleId]['tumour'].update(fl['info']['metrics'])
+                        variant_calling_stats[sampleId]['tumour']['sanger']['contamination'].update(fl['info']['metrics'])
                     else:
-                        sanger_job_stats[sampleId]['normal'].update(fl['info']['metrics'])
+                        variant_calling_stats[sampleId]['normal']['sanger']['contamination'].update(fl['info']['metrics'])
                 elif fl['dataType'] == 'Ploidy and Purity Estimation':
-                    fl['info']['metrics'].pop('GenderChr')
-                    fl['info']['metrics'].pop('GenderChrFound')
-                    sanger_job_stats[sampleId]['ascat_metrics'].update(fl['info']['metrics'])
+                    variant_calling_stats[sampleId]['tumour']['sanger']['ascat_metrics'].update(fl['info']['metrics'])
                 elif fl['dataType'] == 'Genotyping Inferred Gender':
-                    sanger_job_stats[sampleId]['geno_infer_gender'] = fl['info']['metrics']['tumours'][0]['gender']['gender']
+                    variant_calling_stats[sampleId]['tumour']['sanger']['genotype_inference'].update(fl['info']['metrics']['tumours'][0]['gender'])
                 elif fl['dataType'] == 'Alignment QC' and 'qc_metrics' in fl['fileName']:
                     metrics = {}
-                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'pairs_on_different_chromosomes']:
+                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'pairs_on_different_chromosomes']:
                         metrics.update({fn: fl['info']['metrics'][fn]})
                     metrics.update({
                         'duplicate_rate': round(fl['info']['metrics']['duplicated_bases']/(fl['info']['metrics']['total_reads']*fl['info']['metrics']['average_length']), 3)
@@ -186,12 +308,15 @@ def process_qc_metrics(song_dump, sanger_job_stats):
                     metrics.update({
                         'estimated_coverage': round(fl['info']['metrics']['mapped_bases_cigar']/total_size.get(experimental_strategy.lower()), 3)
                     })
-                    sanger_job_stats[sampleId]['tumour'].update(metrics)
+                    fname = os.path.join("data", 'qc_metrics', analysis['studyId'], fl['fileName'])
+                    extra_metrics = ['insert_size_sd']
+                    metrics = get_extra_metrics(fname, extra_metrics, metrics)
+                    variant_calling_stats[sampleId]['tumour']['alignment'].update(metrics)
                 elif fl['dataType'] == 'OxoG Metrics':
-                    sanger_job_stats[sampleId]['tumour'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})
+                    variant_calling_stats[sampleId]['tumour']['alignment'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})
                     
                 elif fl['dataType'] == 'Aligned Reads':
-                    sanger_job_stats[sampleId]['tumour'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})
+                    variant_calling_stats[sampleId]['tumour']['alignment'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})
 
                 else:
                     continue
@@ -208,10 +333,8 @@ def process_qc_metrics(song_dump, sanger_job_stats):
 
             for fl in analysis['files']:
                 if fl['dataType'] == 'Alignment QC':
-                    metrics = {
-                        'sample_id': analysis['samples'][0]['sampleId']
-                    }
-                    for fn in ['error_rate', 'properly_paired_reads', 'paired_reads', 'total_reads', 'pairs_on_different_chromosomes']:
+                    metrics = {}
+                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'pairs_on_different_chromosomes']:
                         metrics.update({fn: fl['info']['metrics'][fn]})
                     metrics.update({
                         'duplicate_rate': round(fl['info']['metrics']['duplicated_bases']/(fl['info']['metrics']['total_reads']*fl['info']['metrics']['average_length']), 3)
@@ -222,23 +345,29 @@ def process_qc_metrics(song_dump, sanger_job_stats):
                     metrics.update({
                         'estimated_coverage': round(fl['info']['metrics']['mapped_bases_cigar']/total_size.get(experimental_strategy.lower()), 3)
                     })
-                    for sa in sample_map[normal_sample_id]:  
-                        sanger_job_stats[sa]['normal'].update(metrics)
-                        sanger_job_stats[sa]['flags']['normal_aligned'] = True 
+                    fname = os.path.join("data", 'qc_metrics', analysis['studyId'], fl['fileName'])
+                    extra_metrics = ['insert_size_sd']
+                    metrics = get_extra_metrics(fname, extra_metrics, metrics)
+
+                    for sa in sample_map[normal_sample_id]:
+                        variant_calling_stats[sa]['normal']['sample_id'] = analysis['samples'][0]['sampleId']  
+                        variant_calling_stats[sa]['normal']['alignment'].update(metrics)
+                        variant_calling_stats[sa]['flags']['normal_aligned'] = True 
                 elif fl['dataType'] == 'OxoG Metrics':
                     for sa in sample_map[normal_sample_id]:  
-                        sanger_job_stats[sa]['normal'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})                 
+                        variant_calling_stats[sa]['normal']['alignment'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})                 
                 elif fl['dataType'] == 'Aligned Reads':
                     for sa in sample_map[normal_sample_id]:  
-                        sanger_job_stats[sa]['normal'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})                    
+                        variant_calling_stats[sa]['normal']['alignment'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})                    
                 else:
                     continue                   
 
-    return sanger_job_stats
+    return variant_calling_stats
 
 def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
 
     file_type_map = { # [analysisType, dataType, data_category]
+        "qc_metrics": ['qc_metrics', 'Alignment QC', 'Quality Control Metrics'],
         "timing_metrics": ['variant_calling_supplement', 'Variant Calling Supplement', None],
         "snv": ['variant_calling', 'Raw SNV Calls', 'Simple Nucleotide Variation'],
         "indel": ['variant_calling', 'Raw InDel Calls', 'Simple Nucleotide Variation']
@@ -261,9 +390,11 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
 
             for fl in analysis['files']:
                 if fl['fileName'] in downloaded: continue
+                if not file_type in fl['fileName']: continue
                 if not fl['dataType'] == file_type_map[file_type][1]: continue
                 if file_type_map[file_type][2] is None and 'data_category' in fl['info']: continue
                 if file_type_map[file_type][2] and not fl['info']['data_category'] == file_type_map[file_type][2]: continue
+                
 
                 cmd = 'export ACCESSTOKEN=%s && export METADATA_URL=%s \
                     && export STORAGE_URL=%s && export TRANSPORT_PARALLEL=3 \
@@ -327,7 +458,7 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
     return gnomad_af
 
 
-def process_annot_vcf(sanger_job_stats, af_threshold):
+def process_annot_vcf(variant_calling_stats, af_threshold):
     annot_dir = os.path.join("data", "annot_vcf")
     annotated = []
     for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
@@ -337,13 +468,13 @@ def process_annot_vcf(sanger_job_stats, af_threshold):
         tumour_sample_id = os.path.basename(vcf).split('.')[2]
         data_type = os.path.basename(vcf).split('.')[7] 
         
-        if not 'gnomad_overlap' in sanger_job_stats[tumour_sample_id]:
-            sanger_job_stats[tumour_sample_id]['gnomad_overlap'] = {}
-        sanger_job_stats[tumour_sample_id]['gnomad_overlap'][data_type] = {}
+        if not 'gnomad_overlap' in variant_calling_stats[tumour_sample_id]:
+            variant_calling_stats[tumour_sample_id]['gnomad_overlap'] = {}
+        variant_calling_stats[tumour_sample_id]['gnomad_overlap'][data_type] = {}
         gnomad = get_gnomad_overlap(vcf, af_threshold, annotated)
-        sanger_job_stats[tumour_sample_id]['gnomad_overlap'][data_type].update(gnomad)
+        variant_calling_stats[tumour_sample_id]['gnomad_overlap'][data_type].update(gnomad)
     
-    return sanger_job_stats
+    return variant_calling_stats
 
 
 def get_timing(fname, experimental_strategy):
@@ -436,7 +567,7 @@ def get_timing(fname, experimental_strategy):
     return sanger_timing
 
 
-def process_timing_supplement(sanger_job_stats):
+def process_timing_supplement(variant_calling_stats):
     supplement_dir = os.path.join("data", 'variant_calling_supplement')
     for tgz in glob.glob(os.path.join(supplement_dir, '*-*', '*.timings-supplement.tgz'), recursive=True):
         tumour_sample_id = os.path.basename(tgz).split('.')[2]
@@ -448,14 +579,14 @@ def process_timing_supplement(sanger_job_stats):
             cmd = 'mkdir %s && tar -C %s -xzf %s' % (os.path.join(supplement_dir, 'unzip'), os.path.join(supplement_dir, 'unzip'), tgz)
         run_cmd(cmd)
 
-        sanger_job_stats[tumour_sample_id]['timing'] = {}
+        variant_calling_stats[tumour_sample_id]['tumour']['sanger']['timing'] = {}
         # total_output_size = 0 
         for fname in glob.glob(os.path.join(supplement_dir, 'unzip', 'timings', "*.time*")):
             if 'annot' in fname: continue
             sanger_timing = get_timing(fname, experimental_strategy)
-            sanger_job_stats[tumour_sample_id]['timing'].update(sanger_timing)
-        # sanger_job_stats[tumour_sample_id]['timing'].update({"total_output_size_gb": total_output_size})           
-    return sanger_job_stats    
+            variant_calling_stats[tumour_sample_id]['tumour']['sanger']['timing'].update(sanger_timing)
+        # variant_calling_stats[tumour_sample_id]['timing'].update({"total_output_size_gb": total_output_size})           
+    return variant_calling_stats    
 
 def report(donor, report_name):
     keys = donor[0].keys()
@@ -468,6 +599,9 @@ def report(donor, report_name):
 def main():
     parser = ArgumentParser()
     parser.add_argument("-d", "--dump_path", dest="dump_path", type=str, default="data/rdpc-song.jsonl", help="path to song dump jsonl file")
+    parser.add_argument("-a", "--pcawg_sample_sheet", dest="pcawg_sample_sheet", type=str, default="data/pcawg_sample_sheet.tsv", help="path to pcwag sample sheet file")
+    parser.add_argument("-q", "--pcawg_sanger_qc", dest="pcawg_sanger_qc", type=str, default="data/pcawg_sanger_qc_metrics.jsonl", help="path to pcawg sanger qc file")
+    parser.add_argument("-b", "--pcawg_broad_qc", dest="pcawg_broad_qc", type=str, default="data/pcawg_broad_qc_metrics.tsv", help="path to pcawg broad qc file")
     parser.add_argument("-m", "--metadata_url", dest="metadata_url", type=str, default="https://song.rdpc.cancercollaboratory.org")
     parser.add_argument("-s", "--storage_url", dest="storage_url", type=str, default="https://score.rdpc.cancercollaboratory.org")
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=str, default=4)
@@ -477,37 +611,50 @@ def main():
     args = parser.parse_args()
 
     song_dump = args.dump_path
-    sanger_job_stats = {}
-    sanger_job_stats = process_qc_metrics(song_dump, sanger_job_stats)
+    variant_calling_stats = {}
+
+    #download qc_metrics
+    #download(song_dump, 'qc_metrics', args.token, args.metadata_url, args.storage_url)
+
+    variant_calling_stats = process_qc_metrics(song_dump, variant_calling_stats)
+
+    pcawg_sample_sheet = args.pcawg_sample_sheet
+    pcawg_sanger_qc = args.pcawg_sanger_qc
+    pcawg_broad_qc = args.pcawg_broad_qc
+    variant_calling_stats = add_pcawg_info(variant_calling_stats, pcawg_sample_sheet, pcawg_sanger_qc, pcawg_broad_qc)
+
 
     # download timing-supplement
-    download(song_dump, 'timing_metrics', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'timing_metrics', args.token, args.metadata_url, args.storage_url)
 
     # process the timing-supplement
-    sanger_job_stats = process_timing_supplement(sanger_job_stats)
+    #variant_calling_stats = process_timing_supplement(variant_calling_stats)
     
     # download snv vcf
-    download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
 
     # download indel vcf
-    download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
 
     # annotate the vcf with gnomad AF
-    annot_vcf(args.cpu_number, args.conf)
+    #annot_vcf(args.cpu_number, args.conf)
 
     # process the annot_vcf
-    sanger_job_stats = process_annot_vcf(sanger_job_stats, args.af_threshold)
+    #variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
 
 
-    with open('sanger_job_stats.json', 'w') as f:
-        f.write(json.dumps(sanger_job_stats, indent=2))
+    with open('variant_calling_stats.json', 'w') as f:
+        f.write(json.dumps(variant_calling_stats, indent=2))
 
     # generate tsv file
-    sanger_job_stats_tsv = []
-    report_name = 'sanger_job_stats.tsv'
-    for d, v in sanger_job_stats.items():
-        sanger_job_stats_tsv.append(get_dict_value(None, v, json2tsv_fields_map))
-    report(sanger_job_stats_tsv, report_name)
+    variant_calling_stats_tsv = []
+    pcawg_qc_tsv = []
+    for d, v in variant_calling_stats.items():
+        variant_calling_stats_tsv.append(get_dict_value(None, v, variant_calling_stats_fields))
+        pcawg_qc_tsv.append(get_dict_value(None, v, pcawg_qc_fields))
+    report(variant_calling_stats_tsv, 'variant_calling_stats.tsv')
+    report(pcawg_qc_tsv, 'pcawg_qc.tsv')
+
 
 if __name__ == "__main__":
     main()

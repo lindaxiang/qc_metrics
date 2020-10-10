@@ -133,14 +133,14 @@ def main():
         'exclude_list': set(),
         'schedule_list': set()
     }
-    file_list = glob.glob("exclude_*.*") if args.exclude else []
+    file_list = glob.glob("exclude/exclude_*.*") if args.exclude else []
     for fl in file_list:
         with open(fl, 'r') as f:
             for line in f:
                 if line.startswith('#'): continue
                 annotation['exclude_list'].add(line.rstrip())
     
-    file_list = glob.glob("schedule_*.*") if args.exclude else []
+    file_list = glob.glob("exclude/schedule_*.*") if args.exclude else []
     for fl in file_list:
         with open(fl, 'r') as f:
             for line in f:
@@ -150,15 +150,16 @@ def main():
 
     report_analysis = get_analysis(song_dump)
     for k, v in report_analysis.items():
-        report(v, 'report_'+k+'.tsv')
+        report(v, 'report/report_'+k+'.tsv')
 
     job = process_sequencing_alignment(song_dump, annotation['exclude_list'])
     report_job = []
     for d, v in job.items():
         if not v.get('normal_aln_analysis_id') or not v.get('tumour_aln_analysis_id'): continue
-        if v.get('normal_aln_analysis_id') in annotation['schedule_list'] and v.get('tumour_aln_analysis_id') in annotation['schedule_list']: continue
+        #if v.get('normal_aln_analysis_id') in annotation['schedule_list'] and v.get('tumour_aln_analysis_id') in annotation['schedule_list']: continue
+        if d in annotation['schedule_list']: continue
         report_job.append(v)
-    report(report_job, 'sanger_jobs_to_stage.tsv')
+    report(report_job, 'report/sanger_jobs_to_stage.tsv')
 
 
 if __name__ == "__main__":
