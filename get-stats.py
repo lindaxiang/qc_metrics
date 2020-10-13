@@ -442,14 +442,18 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
 
     df = pd.read_table(gnomad_file, sep='\t', \
          names=["CHROM", "POS", "REF", "ALT", "FILTER", "gnomad_af", "gnomad_filter"], \
-         dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "FILTER": str, "gnomad_af": float, "gnomad_filter": str}, \
+         dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "FILTER": str, "gnomad_af": str, "gnomad_filter": str}, \
          na_values=".")
-    somatic_pass_total = df.loc[df['FILTER']=="PASS"].shape[0]
+    
+    df_somatic_pass = df.loc[df['FILTER']=="PASS", :]
+    somatic_pass_total = df_somatic_pass.shape[0]
     gnomad_af = {
         "somatic_pass_total": somatic_pass_total
     }
+    # convert to numeric dtype for all pass variants
+    df_somatic_pass['gnomad_af'] = pd.to_numeric(df_somatic_pass['gnomad_af'])
     for t in af_threshold:
-        gnomad_af['t_'+str(t).replace('.', '_')+'_count'] = df.loc[(df['gnomad_af'] > t) & (df['FILTER']=="PASS"), :].shape[0]
+        gnomad_af['t_'+str(t).replace('.', '_')+'_count'] = df_somatic_pass.loc[df['gnomad_af'] > t, :].shape[0]
         if somatic_pass_total > 0:
             gnomad_af['t_'+str(t).replace('.', '_')] = round(gnomad_af['t_'+str(t).replace('.', '_')+'_count']/somatic_pass_total, 3)
         else:
