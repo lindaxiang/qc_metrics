@@ -382,6 +382,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL):
     with open(song_dump, 'r') as fp:
         for fline in fp:
             analysis = json.loads(fline)
+            if analysis.get('analysisId') in ['fa2cc829-c646-4719-acc8-29c6465719e4']: continue
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] == file_type_map[file_type][0]: continue
             output_dir = os.path.join(data_dir, analysis['studyId'])
@@ -618,7 +619,7 @@ def main():
     variant_calling_stats = {}
 
     #download qc_metrics
-    #download(song_dump, 'qc_metrics', args.token, args.metadata_url, args.storage_url)
+    download(song_dump, 'qc_metrics', args.token, args.metadata_url, args.storage_url)
 
     variant_calling_stats = process_qc_metrics(song_dump, variant_calling_stats)
 
@@ -635,16 +636,16 @@ def main():
     #variant_calling_stats = process_timing_supplement(variant_calling_stats)
     
     # download snv vcf
-    #download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
+    download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
 
     # download indel vcf
-    #download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
+    download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
 
     # annotate the vcf with gnomad AF
-    #annot_vcf(args.cpu_number, args.conf)
+    annot_vcf(args.cpu_number, args.conf)
 
     # process the annot_vcf
-    #variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
+    variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
 
 
     with open('variant_calling_stats.json', 'w') as f:
