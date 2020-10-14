@@ -16,7 +16,6 @@ import copy
 def main():
     parser = ArgumentParser()
     parser.add_argument("-d", "--dump_path", dest="dump_path", type=str, default="data/rdpc-song.jsonl", help="path to song dump jsonl file")
-    parser.add_argument("-i", "--include", dest="include", action='store_true', help="include list to work on")
     parser.add_argument("-m", "--metadata_url", dest="metadata_url", type=str, default="https://song.rdpc.cancercollaboratory.org")
     parser.add_argument("-s", "--storage_url", dest="storage_url", type=str, default="https://score.rdpc.cancercollaboratory.org")
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=str, default=4)
@@ -24,21 +23,22 @@ def main():
     args = parser.parse_args()
 
     include = {}
-    if args.include:
-        file_list = glob.glob("include/*") 
-        for fl in file_list:    
-            wf_name = os.path.splitext(os.path.basename(fl))[0]
-            with open(fl, 'r') as f:
-                for line in f:
-                    if line.startswith('#'): continue
-                    if not include.get(wf_name): include[wf_name] = set()
-                    include[wf_name].add(line.rstrip())
+    file_list = glob.glob("include/*") 
+    for fl in file_list:    
+        wf_name = os.path.splitext(os.path.basename(fl))[0]
+        with open(fl, 'r') as f:
+            for line in f:
+                if line.startswith('#'): continue
+                if not include.get(wf_name): include[wf_name] = set()
+                include[wf_name].add(line.rstrip())
+
 
     #download data
     for wf in ['sanger', 'mutect2', 'mutect2-bqsr']:
         subfolder = 'evaluate/'+wf
-        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
-        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        if not include.get(wf): continue 
+        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
+        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
 
     data_dir = 'data/evaluate'
     evaluate_result = []
@@ -60,12 +60,12 @@ def main():
                 sys.stderr.write("truth VCF does not appear to be indexed. bgzip + tabix index required.\n")
                 sys.exit(1)
 
-            if evtype not in ('SV', 'SNV', 'INDEL'):
+            if evtype not in ('sv', 'snv', 'indel'):
                 sys.stderr.write("last arg must be either SV, SNV, or INDEL\n")
                 sys.exit(1)
 
-            result = evaluate(subvcf, truvcf, vtype=evtype, ignorechroms=chromlist, truthmask=False)
-            count  = countrecs(subvcf, truvcf, vtype=evtype, ignorechroms=chromlist, truthmask=False)
+            result = evaluate(subvcf, truvcf, vtype=evtype.upper(), ignorechroms=chromlist, truthmask=False)
+            count  = countrecs(subvcf, truvcf, vtype=evtype.upper(), ignorechroms=chromlist, truthmask=False)
             
             result_dict = {
                 'studyId': studyId,
