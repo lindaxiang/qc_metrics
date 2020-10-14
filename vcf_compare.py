@@ -63,7 +63,7 @@ def main():
             if args.tool == 'som':
                 if fname+'.som.stats.csv' in evaluate_result: continue
                 cmd = 'export HGREF=/data/reference/GRCh38/GRCh38_hla_decoy_ebv.fa \
-                    && docker run -it --rm   -u $(id -u):$(id -g) -e HGREF -v `pwd`:/data pkrusche/hap.py \
+                    && docker run -it --rm -e HGREF -v `pwd`:/data pkrusche/hap.py \
                     /opt/hap.py/bin/som.py /data/%s /data/%s -o /data/%s' % (truvcf, subvcf, output+'.som')
                 run_cmd(cmd)
 
