@@ -221,8 +221,8 @@ def evaluate(submission, truth, vtype='SNV', ignorechroms=None, truthmask=True):
             if relevant(subrec, vtype, ignorechroms):
                 submasked += 1
 
-    print("tpcount, fpcount, subrecs, submasked, trurecs, trumasked:")
-    print(tpcount, fpcount, subrecs, submasked, trurecs, trumasked)
+    # print("tpcount, fpcount, subrecs, submasked, trurecs, trumasked:")
+    # print(tpcount, fpcount, subrecs, submasked, trurecs, trumasked)
 
     # sanity checks
     if trurecs == 0:
@@ -235,8 +235,9 @@ def evaluate(submission, truth, vtype='SNV', ignorechroms=None, truthmask=True):
     precision   = float(tpcount) / float(tpcount + fpcount)
     specificity = 1.0 - float(fpcount) / float(subrecs)
     balaccuracy = (sensitivity + specificity) / 2.0
+    f1_score = 2*sensitivity*precision/(sensitivity+precision)
 
-    return sensitivity, specificity, balaccuracy
+    return trurecs, subrecs, tpcount, fpcount, sensitivity, precision, specificity, balaccuracy, f1_score
 
 
 if __name__ == '__main__':
