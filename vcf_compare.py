@@ -23,9 +23,9 @@ def main():
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     args = parser.parse_args()
 
+    include = {}
     if args.include:
-        file_list = glob.glob("include/*.*") 
-        include = {}
+        file_list = glob.glob("include/*") 
         for fl in file_list:    
             wf_name = os.path.splitext(os.path.basename(fl))
             with open(fl, 'r') as f:
@@ -33,8 +33,6 @@ def main():
                     if line.startswith('#'): continue
                     if not include.get(wf_name): include[wf_name] = set()
                     include[wf_name].add(line.rstrip())
-    else:
-        include = None
 
     #download data
     for wf in ['sanger', 'mutect2', 'mutect2-bqsr']:
