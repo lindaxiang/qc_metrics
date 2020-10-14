@@ -88,11 +88,13 @@ def mask(rec, vcfh, truchroms, debug=False, active=True):
 
         # SNV and INDEL calls are ignored in IGN regions, cannot be deactivated with active=False 
         for overlap_rec in vcfh.fetch(rec.CHROM, rec.POS-1, rec.POS):
+            if not passfilter(overlap_rec): continue
             if (rec.is_snp or rec.is_indel) and overlap_rec.INFO.get('SVTYPE') == 'IGN':
                 return True
 
         # all calls are ignored in MSK regions
         for overlap_rec in vcfh.fetch(rec.CHROM, rec.POS-1, rec.POS):
+            if not passfilter(overlap_rec): continue
             if overlap_rec.INFO.get('SVTYPE') == 'MSK':
                 if debug:
                     print("DEBUG: submitted:", str(rec), "overlaps:", str(overlap_rec))
@@ -111,6 +113,10 @@ def countrecs(submission, truth, vtype='SNV', ignorechroms=None, truthmask=True)
     truvcfh = vcf.Reader(filename=truth)
 
     truchroms = dict([(trurec.CHROM, True) for trurec in truvcfh])
+    trulist = []
+    for trurec in truvcfh:
+      if passfilter(trurec): trulist.append((trurec.CHROM, True))
+    truchroms = dict(trulist)
 
     subrecs = 0
 
@@ -143,7 +149,9 @@ def evaluate(submission, truth, vtype='SNV', ignorechroms=None, truthmask=True):
     truchroms = {}
 
     ''' store list of truth records, otherwise the iterator needs to be reset '''
-    trulist = [trurec for trurec in truvcfh]
+    trulist = []
+    for trurec in truvcfh:
+      if passfilter(trurec): trulist.append(trurec)
 
     ''' count records in truth vcf, track contigs/chromosomes '''
     for trurec in trulist:

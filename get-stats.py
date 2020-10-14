@@ -453,7 +453,7 @@ def get_gnomad_overlap(vcf, af_threshold, annotated):
     # convert to numeric dtype for all pass variants
     df_somatic_pass['gnomad_af'] = pd.to_numeric(df_somatic_pass['gnomad_af'])
     for t in af_threshold:
-        gnomad_af['t_'+str(t).replace('.', '_')+'_count'] = df_somatic_pass.loc[df['gnomad_af'] > t, :].shape[0]
+        gnomad_af['t_'+str(t).replace('.', '_')+'_count'] = df_somatic_pass.loc[df_somatic_pass['gnomad_af'] > t, :].shape[0]
         if somatic_pass_total > 0:
             gnomad_af['t_'+str(t).replace('.', '_')] = round(gnomad_af['t_'+str(t).replace('.', '_')+'_count']/somatic_pass_total, 3)
         else:
