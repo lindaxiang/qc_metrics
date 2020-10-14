@@ -54,6 +54,7 @@ def main():
             if not len(glob.glob(os.path.join(data_dir, sub, studyId, fname), recursive=True)) == 1: continue
             
             subvcf = glob.glob(os.path.join(data_dir, sub, studyId, fname))[0]
+            fname = os.path.basename(subvcf)
             
             report_dir = os.path.join(data_dir, sub+'_report', studyId)
             if not os.path.exists(report_dir):
