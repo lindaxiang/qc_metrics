@@ -48,8 +48,9 @@ def main():
         result_dict = OrderedDict()
         studyId, donorId, sampleId, library, date_string, workflow, variant_type, evtype = os.path.basename(truvcf).split(".")[0:8]
         for sub in ['mutect2', 'mutect2-bqsr']:
-            fname = '.'.join([studyId, donorId, sampleId, library, '*', 'gatk-mutect2', variant_type, evtype, 'vcf', 'gz']
-            if not len(glob.glob(os.path.join(data_dir, sub, studyId, fname))) == 1: continue
+            fname = '.'.join([studyId, donorId, sampleId, library, '*', 'gatk-mutect2', variant_type, evtype, 'vcf', 'gz'])
+            print(fname)
+            if not len(glob.glob(os.path.join(data_dir, sub, studyId, fname), recursive=True)) == 1: continue
             subvcf = glob.glob(os.path.join(data_dir, sub, studyId, fname))[0]
 
             chromlist = None
