@@ -76,7 +76,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
     with open(song_dump, 'r') as fp:
         for fline in fp:
             analysis = json.loads(fline)
-            if include and not analysis.get('analysisId') in include: continue
+            if include and not analysis['analysisId'] in include: continue
             if analysis.get('analysisId') in ['fa2cc829-c646-4719-acc8-29c6465719e4']: continue
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] == file_type_map[file_type][0]: continue

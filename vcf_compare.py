@@ -16,22 +16,31 @@ import copy
 def main():
     parser = ArgumentParser()
     parser.add_argument("-d", "--dump_path", dest="dump_path", type=str, default="data/rdpc-song.jsonl", help="path to song dump jsonl file")
-    parser.add_argument("-a", "--pcawg_sample_sheet", dest="pcawg_sample_sheet", type=str, default="data/pcawg_sample_sheet.tsv", help="path to pcwag sample sheet file")
-    parser.add_argument("-q", "--pcawg_sanger_qc", dest="pcawg_sanger_qc", type=str, default="data/pcawg_sanger_qc_metrics.jsonl", help="path to pcawg sanger qc file")
-
+    parser.add_argument("-i", "--include", dest="include", action='store_true', help="include list to work on")
     parser.add_argument("-m", "--metadata_url", dest="metadata_url", type=str, default="https://song.rdpc.cancercollaboratory.org")
     parser.add_argument("-s", "--storage_url", dest="storage_url", type=str, default="https://score.rdpc.cancercollaboratory.org")
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=str, default=4)
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     args = parser.parse_args()
 
-    song_dump = args.dump_path
-    variant_calling_stats = {}
+    if args.include:
+        file_list = glob.glob("include/*.*") 
+        include = {}
+        for fl in file_list:    
+            wf_name = os.path.splitext(os.path.basename(fl))
+            with open(fl, 'r') as f:
+                for line in f:
+                    if line.startswith('#'): continue
+                    if not include.get(wf_name): include[wf_name] = set()
+                    include[wf_name].add(line.rstrip())
+    else:
+        include = None
 
     #download data
-    for subfolder in ['evaluate/sanger', 'evaluate/mutect2', 'evaluate/mutect2-bqsr']:
-        download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url, args.include, subfolder)
-        download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url, args.include, subfolder)
+    for wf in ['sanger', 'mutect2', 'mutect2-bqsr']:
+        subfolder = 'evaluate/'+wf
+        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
 
     data_dir = 'data/evaluate'
     evaluate_result = []
