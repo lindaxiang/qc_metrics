@@ -13,6 +13,7 @@ import re
 import pandas as pd
 import numpy as np
 
+pd.options.mode.chained_assignment = None  # default='warn'
 
 variant_calling_stats_fields = {
     'donor_id': 'donor_id',

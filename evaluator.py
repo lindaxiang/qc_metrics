@@ -194,6 +194,7 @@ def evaluate(submission, truth, vtype='SNV', ignorechroms=None, truthmask=True):
             try:
                 if subrec.CHROM in truchroms and passfilter(subrec):
                     for trurec in truvcfh.fetch(subrec.CHROM, startpos, end=endpos):
+                        if not passfilter(trurec): continue
                         # if using BND notation, don't penalize multiple BND records matching one truth interval
                         if str(trurec) in used_truth:
                             if vtype == 'SV' and subrec.INFO.get('SVTYPE') and subrec.INFO.get('SVTYPE') == 'BND':
