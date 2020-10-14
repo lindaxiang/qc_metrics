@@ -27,7 +27,7 @@ def main():
     if args.include:
         file_list = glob.glob("include/*") 
         for fl in file_list:    
-            wf_name = os.path.splitext(os.path.basename(fl))
+            wf_name = os.path.splitext(os.path.basename(fl))[0]
             with open(fl, 'r') as f:
                 for line in f:
                     if line.startswith('#'): continue
