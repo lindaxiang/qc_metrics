@@ -55,7 +55,7 @@ def main():
             
             subvcf = glob.glob(os.path.join(data_dir, sub, studyId, fname))[0]
             fname = os.path.basename(subvcf)
-            
+
             report_dir = os.path.join(data_dir, sub+'_report', studyId)
             if not os.path.exists(report_dir):
                 os.makedirs(report_dir)
@@ -87,12 +87,13 @@ def main():
                 # count  = countrecs(subvcf, truvcf, vtype=evtype.upper(), ignorechroms=chromlist, truthmask=False)
                 
                 with open(output+'.evaluator.stats.csv', 'w') as f:
-                    f.write("trurecs, subrecs, tpcount, fpcount, sensitivity, precision, specificity, balaccuracy, f1_score")
+                    f.write("total.truth, total.query, tp, fp, recall, precision, specificity, balaccuracy, f1_score")
                     f.write(','.join(map(str, result)))
 
             else:
                 sys.exit(0)
-            
+
+    evaluate_list = []        
     for fn in glob.glob(os.path.join(data_dir, "*_report", "*-*", "*."+args.tool+'.stats.csv'), recursive=True):
         sub = os.path.dirname(fn).split('/')[-2].split('_')[0]
         studyId, donorId, sampleId, library, date_string, workflow, variant_type, evtype = os.path.basename(fn).split(".")[0:8]
@@ -106,15 +107,22 @@ def main():
         }
         with open(fn, 'r') as f:
             dict_reader = csv.DictReader(f, delimiter=",")
-            result_dict.update(dict_reader)
-        evaluate_result.append(copy.deepcopy(result_dict)) 
+            for row in dict_reader:
+                if row.get('type')=='records': continue
+                for k in ['total.truth', 'total.query', 'tp', 'fp', 'fn', 'recall', 'recall_lower', 'recall_upper', 'recall2', 'precision', 'precision_lower', 'precision_upper', 'specificity', 'balaccuracy', 'f1_score']:
+                    result_dict.update({k, row.get(k, None)})
+                result_dict['specificity'] = 1.0 - float(row['fp']) / float(row['total.query'])
+                result_dict['balaccuracy'] = (float(row['recall']) + specificity) / 2.0
+                result_dict['f1_score'] = 2*float(row['recall'])*float(row['precision'])/(float(row['recall'])+float(row['precision']))
+                
+        evaluate_list.append(copy.deepcopy(result_dict)) 
     
     with open(os.path.join(report_dir, 'mutect2_evaluate_result.json'), 'w') as f:
-        for s in evaluate_result:
+        for s in evaluate_list:
             f.write(json.dumps(s)+'\n')
 
     # generate tsv file
-    report(evaluate_result, os.path.join(report_dir, 'mutect2_evaluate_result.txt'))
+    report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.txt'))
 
 
 if __name__ == "__main__":
