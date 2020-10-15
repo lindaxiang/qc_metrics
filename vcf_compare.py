@@ -8,9 +8,33 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd
+from utils import report, download, run_cmd, get_dict_value
 from evaluator import evaluate, countrecs
 import copy
+
+mutect2_report_fields = {
+    'studyId': 'studyId',
+    'donorId': 'donorId',
+    'sampleId': 'sampleId',
+    'library_strategy': 'library_strategy',
+    'evtype': 'evtype',
+    'mutect2_total_query': 'mutect2.total_query',
+    'mutect2_tp': 'mutect2.tp',
+    'mutect2_fp': 'mutect2.fp',
+    'mutect2_recall': 'mutect2.recall',
+    'mutect2_precision': 'mutect2.precision',
+    'mutect2_specificity': 'mutect2.specificity',
+    'mutect2_balaccuracy': 'mutect2.balaccuracy',
+    'mutect2_f1_score': 'mutect2.f1_score',
+    'mutect2-bqsr_total_query': 'mutect2-bqsr.total_query',
+    'mutect2-bqsr_tp': 'mutect2-bqsr.tp',
+    'mutect2-bqsr_fp': 'mutect2-bqsr.fp',
+    'mutect2-bqsr_recall': 'mutect2-bqsr.recall',
+    'mutect2-bqsr_precision': 'mutect2-bqsr.precision',
+    'mutect2-bqsr_specificity': 'mutect2-bqsr.specificity',
+    'mutect2-bqsr_balaccuracy': 'mutect2-bqsr.balaccuracy',
+    'mutect2-bqsr_f1_score': 'mutect2-bqsr.f1_score'
+}
 
 
 def main():
@@ -112,7 +136,7 @@ def main():
             for row in dict_reader:
                 if row.get('type')=='records': continue
                 for k in ['total.truth', 'total.query', 'tp', 'fp', 'fn', 'recall', 'recall_lower', 'recall_upper', 'recall2', 'precision', 'precision_lower', 'precision_upper', 'specificity', 'balaccuracy', 'f1_score']:
-                    result_dict.update({k: row.get(k, None)})
+                    result_dict.update({k.replace('.', '_'): row.get(k, None)})
                 try:
                     result_dict['specificity'] = 1.0 - float(row['fp']) / float(row['total.query'])
                     result_dict['balaccuracy'] = (float(row['recall']) + result_dict['specificity']) / 2.0
@@ -120,7 +144,7 @@ def main():
                 except ZeroDivisionError:
                     continue
         
-        evaluate_dict[sampleId+'_'+evtype].update({sub: result_dict)
+        evaluate_dict[sampleId+'_'+evtype].update({sub: result_dict})
         
     
     report_dir = "report"
@@ -131,7 +155,7 @@ def main():
     with open(os.path.join(report_dir, 'mutect2_evaluate_result.json'), 'w') as f:
         for k, s in evaluate_dict.items():
             f.write(json.dumps(s)+'\n')
-            evaluate_list.append(s)
+            evaluate_list.append(get_dict_value(None, s, mutect2_report_fields))
 
     # generate tsv file
     report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.txt'))
