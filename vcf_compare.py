@@ -127,7 +127,8 @@ def main():
             'donorId': donorId,
             'sampleId': sampleId,
             'library_strategy': library,
-            'evtype': evtype
+            'evtype': evtype,
+            'workflow': sub
         }
         if not evaluate_dict.get(sampleId+'_'+evtype): 
             evaluate_dict[sampleId+'_'+evtype] = {
