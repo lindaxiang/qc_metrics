@@ -110,7 +110,7 @@ def main():
             for row in dict_reader:
                 if row.get('type')=='records': continue
                 for k in ['total.truth', 'total.query', 'tp', 'fp', 'fn', 'recall', 'recall_lower', 'recall_upper', 'recall2', 'precision', 'precision_lower', 'precision_upper', 'specificity', 'balaccuracy', 'f1_score']:
-                    result_dict.update({k, row.get(k, None)})
+                    result_dict.update({k: row.get(k, None)})
                 result_dict['specificity'] = 1.0 - float(row['fp']) / float(row['total.query'])
                 result_dict['balaccuracy'] = (float(row['recall']) + specificity) / 2.0
                 result_dict['f1_score'] = 2*float(row['recall'])*float(row['precision'])/(float(row['recall'])+float(row['precision']))
