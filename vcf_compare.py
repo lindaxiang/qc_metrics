@@ -93,18 +93,20 @@ def main():
             else:
                 sys.exit(0)
 
-    evaluate_list = []        
+    evaluate_dict = {}        
     for fn in glob.glob(os.path.join(data_dir, "*_report", "*-*", "*."+args.tool+'.stats.csv'), recursive=True):
         sub = os.path.dirname(fn).split('/')[-2].split('_')[0]
         studyId, donorId, sampleId, library, date_string, workflow, variant_type, evtype = os.path.basename(fn).split(".")[0:8]
-        result_dict = {
+        if not evaluate_dict.get(sampleId+'_'+evtype): 
+            evaluate_dict[sampleId+'_'+evtype] = {
             'studyId': studyId,
             'donorId': donorId,
             'sampleId': sampleId,
             'library_strategy': library,
-            'workflow': sub,
             'evtype': evtype
         }
+        
+        result_dict = {}
         with open(fn, 'r') as f:
             dict_reader = csv.DictReader(f, delimiter=",")
             for row in dict_reader:
@@ -117,15 +119,19 @@ def main():
                     result_dict['f1_score'] = 2*float(row['recall'])*float(row['precision'])/(float(row['recall'])+float(row['precision']))
                 except ZeroDivisionError:
                     continue
-                
-        evaluate_list.append(copy.deepcopy(result_dict)) 
+        
+        evaluate_dict[sampleId+'_'+evtype].update({sub: result_dict)
+        
     
     report_dir = "report"
     if not os.path.exists(report_dir):
         os.makedirs(report_dir)
+    
+    evaluate_list = []
     with open(os.path.join(report_dir, 'mutect2_evaluate_result.json'), 'w') as f:
-        for s in evaluate_list:
+        for k, s in evaluate_dict.items():
             f.write(json.dumps(s)+'\n')
+            evaluate_list.append(s)
 
     # generate tsv file
     report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.txt'))
