@@ -117,10 +117,18 @@ def main():
             else:
                 sys.exit(0)
 
-    evaluate_dict = {}        
+    evaluate_dict = {} 
+    evaluate_dict_list = []       
     for fn in glob.glob(os.path.join(data_dir, "*_report", "*-*", "*."+args.tool+'.stats.csv'), recursive=True):
         sub = os.path.dirname(fn).split('/')[-2].split('_')[0]
         studyId, donorId, sampleId, library, date_string, workflow, variant_type, evtype = os.path.basename(fn).split(".")[0:8]
+        result_list = {
+            'studyId': studyId,
+            'donorId': donorId,
+            'sampleId': sampleId,
+            'library_strategy': library,
+            'evtype': evtype
+        }
         if not evaluate_dict.get(sampleId+'_'+evtype): 
             evaluate_dict[sampleId+'_'+evtype] = {
             'studyId': studyId,
@@ -129,12 +137,12 @@ def main():
             'library_strategy': library,
             'evtype': evtype
         }
-        
+           
         result_dict = {}
         with open(fn, 'r') as f:
             dict_reader = csv.DictReader(f, delimiter=",")
             for row in dict_reader:
-                if row.get('type')=='records': continue
+                if not row.get('type') in ['indels', 'SNVs']: continue
                 for k in ['total.truth', 'total.query', 'tp', 'fp', 'fn', 'recall', 'recall_lower', 'recall_upper', 'recall2', 'precision', 'precision_lower', 'precision_upper', 'specificity', 'balaccuracy', 'f1_score']:
                     result_dict.update({k.replace('.', '_'): row.get(k, None)})
                 try:
@@ -144,6 +152,8 @@ def main():
                 except ZeroDivisionError:
                     continue
         
+        result_list.update(result_dict)
+        evaluate_dict_list.append(copy.deepcopy(result_list))
         evaluate_dict[sampleId+'_'+evtype].update({sub: result_dict})
         
     
@@ -151,14 +161,22 @@ def main():
     if not os.path.exists(report_dir):
         os.makedirs(report_dir)
     
+    # generate v1 reports
+    with open(os.path.join(report_dir, 'mutect2_evaluate_result.v1.json'), 'w') as f:
+        for s in evaluate_dict_list:
+            f.write(json.dumps(s)+'\n')
+
+    report(evaluate_dict_list, os.path.join(report_dir, 'mutect2_evaluate_result.v1.txt'))
+
+    # generate v2 reports
     evaluate_list = []
-    with open(os.path.join(report_dir, 'mutect2_evaluate_result.json'), 'w') as f:
+    with open(os.path.join(report_dir, 'mutect2_evaluate_result.v2.json'), 'w') as f:
         for k, s in evaluate_dict.items():
             f.write(json.dumps(s)+'\n')
             evaluate_list.append(get_dict_value(None, s, mutect2_report_fields))
 
     # generate tsv file
-    report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.txt'))
+    report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.v2.txt'))
 
 
 if __name__ == "__main__":
