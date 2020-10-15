@@ -120,6 +120,9 @@ def main():
                 
         evaluate_list.append(copy.deepcopy(result_dict)) 
     
+    report_dir = "report"
+    if not os.path.exists(report_dir):
+        os.makedirs(report_dir)
     with open(os.path.join(report_dir, 'mutect2_evaluate_result.json'), 'w') as f:
         for s in evaluate_list:
             f.write(json.dumps(s)+'\n')
