@@ -105,3 +105,24 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
                     % (ACCESSTOKEN, METADATA_URL, STORAGE_URL, fl['studyId'], fl['objectId'], output_dir)
 
                 run_cmd(cmd)
+
+
+def annot_vcf(cores, conf, data_dir, annot_dir):
+
+    annotated = []
+    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
+        annotated.append(os.path.basename(fn))
+
+    for fp in glob.glob(os.path.join(data_dir, "*-*", "*.vcf.gz"), recursive=True):
+        basename = os.path.basename(fp)
+        if basename in annotated: continue
+
+        study_id = basename.split('.')[0]
+        if not os.path.exists(os.path.join(annot_dir, study_id)):
+            os.makedirs(os.path.join(annot_dir, study_id))
+
+        vcfanno = f'vcfanno -p {cores} {conf} {fp}'
+        bgzip = f'bgzip > {annot_dir}/{study_id}/{basename}'
+        tabix = f'tabix -p vcf {annot_dir}/{study_id}/{basename}'
+        cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
+        run_cmd(cmd)

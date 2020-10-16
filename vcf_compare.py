@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value
+from utils import report, download, run_cmd, get_dict_value, annot_vcf
 from evaluator import evaluate, countrecs
 import copy
 
@@ -64,6 +64,11 @@ def main():
         if not include.get(wf): continue 
         download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
         download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
+
+        # annotate the vcf with gnomad AF
+        data_dir = os.path.join("data", subfolder)
+        annot_dir = os.path.join("data", subfolder+"_annot_vcf")
+        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
 
     data_dir = 'data/evaluate'
     evaluate_result = []
