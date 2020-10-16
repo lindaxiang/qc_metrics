@@ -44,6 +44,7 @@ def main():
     parser.add_argument("-s", "--storage_url", dest="storage_url", type=str, default="https://score.rdpc.cancercollaboratory.org")
     parser.add_argument("-c", "--tool", dest="tool", type=str, default='som')
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=int, default=4)
+    parser.add_argument("-c", "--conf", dest="conf", type=str, default="conf/af_only_gnomad.conf")
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     args = parser.parse_args()
 
