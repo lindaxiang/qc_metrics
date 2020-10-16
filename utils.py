@@ -59,7 +59,9 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
         "qc_metrics": ['qc_metrics', 'Alignment QC', 'Quality Control Metrics'],
         "timing_metrics": ['variant_calling_supplement', 'Variant Calling Supplement', None],
         "snv": ['variant_calling', 'Raw SNV Calls', 'Simple Nucleotide Variation'],
-        "indel": ['variant_calling', 'Raw InDel Calls', 'Simple Nucleotide Variation']
+        "indel": ['variant_calling', 'Raw InDel Calls', 'Simple Nucleotide Variation'],
+        "sv": ['variant_calling', 'Raw SV Calls', 'Structural Variation'],
+        "cnv": ['variant_calling', 'Raw CNV Calls', 'Copy Number Variation']
     }
 
     if subfolder:
