@@ -128,9 +128,11 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
     
+    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
         # use bcftools to query the annotated vcf
+        basename = os.path.basename(fp)
         if basename+'.query.txt' in annotated: continue
-        bcftools_query(vcf)
+        bcftools_query(fp)
 
 def bcftools_query(vcf):
     basename = os.path.basename(vcf)
