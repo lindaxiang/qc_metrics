@@ -120,9 +120,36 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         study_id = basename.split('.')[0]
         if not os.path.exists(os.path.join(annot_dir, study_id)):
             os.makedirs(os.path.join(annot_dir, study_id))
+        vcf = os.join(annot_dir, study_id, basename)
 
         vcfanno = f'vcfanno -p {cores} {conf} {fp}'
-        bgzip = f'bgzip > {annot_dir}/{study_id}/{basename}'
-        tabix = f'tabix -p vcf {annot_dir}/{study_id}/{basename}'
+        bgzip = f'bgzip > {vcf}'
+        tabix = f'tabix -p vcf {vcf}'
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
+    
+        # use bcftools to query the annotated vcf
+        if basename+'.query.txt' in annotated: continue
+        bcftools_query(vcf)
+
+def bcftools_query(vcf):
+    basename = os.path.basename(vcf)
+    caller = 'sanger' if basename.split('.')[5] in ['sanger-wgs', 'sanger-wxs'] else 'mutect2'
+    evtype = basename.split('.')[6]
+    output_base = re.sub(r'.vcf.gz$', '', vcf)
+
+    if caller == 'sanger':
+        if evtype == 'snv':
+            cmd = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%PM\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS"' -s 'TUMOUR' {vcf} > {output_base}.query.txt" 
+        elif evtype == 'indel':
+            bcftools = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%FD\t%FC\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS"' -s 'TUMOUR' {vcf}"
+            awk = f"awk {printf "%s\t%s\t%s\t%s\t%f\t%s\t%s\n",$1,$2,$3,$4,$6/$5,$7,$8}' > {output_base}.query.txt"
+            cmd = bcftools + '|' + awk
+        else:
+            pass
+    elif caller == 'mutect2':
+        cmd = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%AF\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS" & GT="0/1"' {vcf} > {output_base}.query.txt" 
+    else:
+        pass
+    
+    run_cmd(cmd)
