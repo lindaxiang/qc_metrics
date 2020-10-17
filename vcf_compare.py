@@ -71,7 +71,8 @@ def main():
         annot_dir = os.path.join("data", subfolder+"_annot_vcf")
         annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
 
-    
+
+    data_dir = "data/evaluate"
     evaluate_result = []
     for fn in glob.glob(os.path.join(data_dir, "*_report", "*-*", "*.*"), recursive=True):
         evaluate_result.append(os.path.basename(fn))

@@ -112,7 +112,8 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
     annotated = []
     for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
         annotated.append(os.path.basename(fn))
-
+    
+    #annot gnomAD 
     for fp in glob.glob(os.path.join(data_dir, "*-*", "*.vcf.gz"), recursive=True):
         basename = os.path.basename(fp)
         if basename in annotated: continue
@@ -128,11 +129,22 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
     
+    #use bcftools to query the annotated vcf
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
-        # use bcftools to query the annotated vcf
         basename = os.path.basename(fp)
-        if basename+'.query.txt' in annotated: continue
+        if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
         bcftools_query(fp)
+
+    #concatenate the query results
+    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
+        prefix = os.path.basename(fp).split("2020")[0]
+        evtype = os.path.basename(fp).split(".")[7]
+        cat = f'cat {fp}'
+        awk = f'awk \'{{printf "%s.%s.%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
+        cmd = '|'.join([cat, awk, sed])
+        run_cmd(cmd)
+    
 
 def bcftools_query(vcf):
     basename = os.path.basename(vcf)
