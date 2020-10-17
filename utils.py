@@ -140,7 +140,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         prefix = os.path.basename(fp).split("2020")[0]
         evtype = os.path.basename(fp).split(".")[7]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "%s.%s.%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        awk = f'awk \'{{printf "%s.%s.%s.%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
         sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
