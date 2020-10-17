@@ -137,7 +137,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
 def bcftools_query(vcf):
     basename = os.path.basename(vcf)
     caller = 'sanger' if basename.split('.')[5] in ['sanger-wgs', 'sanger-wxs'] else 'mutect2'
-    evtype = basename.split('.')[6]
+    evtype = basename.split('.')[7]
     output_base = re.sub(r'.vcf.gz$', '', vcf)
 
     if caller == 'sanger':
