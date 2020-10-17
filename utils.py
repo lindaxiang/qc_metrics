@@ -140,15 +140,17 @@ def bcftools_query(vcf):
 
     if caller == 'sanger':
         if evtype == 'snv':
-            cmd = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%PM\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS"' -s 'TUMOUR' {vcf} > {output_base}.query.txt" 
+            cmd = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%PM\\t%gnomad_af\\t%gnomad_filter\\n]' \
+                -i 'FILTER=\"PASS\"' -s 'TUMOUR' {vcf} > {output_base}.query.txt"
         elif evtype == 'indel':
-            bcftools = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%FD\t%FC\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS"' -s 'TUMOUR' {vcf}"
-            awk = f"awk {printf "%s\t%s\t%s\t%s\t%f\t%s\t%s\n",$1,$2,$3,$4,$6/$5,$7,$8}' > {output_base}.query.txt"
+            bcftools = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%FD\\t%FC\\t%gnomad_af\\t%gnomad_filter\\n]' \
+                -i 'FILTER=\"PASS\"' -s 'TUMOUR' {vcf}"
+            awk = f"awk '{{printf \"%s\\t%s\\t%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$6/$5,$7,$8}}' > {output_base}.query.txt"
             cmd = bcftools + '|' + awk
         else:
             pass
     elif caller == 'mutect2':
-        cmd = f"bcftools query -f'[%CHROM\t%POS\t%REF\t%ALT\t%AF\t%gnomad_af\t%gnomad_filter\n]' -i'FILTER="PASS" & GT="0/1"' {vcf} > {output_base}.query.txt" 
+        cmd = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
     else:
         pass
     
