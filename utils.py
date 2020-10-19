@@ -121,7 +121,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         study_id = basename.split('.')[0]
         if not os.path.exists(os.path.join(annot_dir, study_id)):
             os.makedirs(os.path.join(annot_dir, study_id))
-        vcf = os.join(annot_dir, study_id, basename)
+        vcf = os.path.join(annot_dir, study_id, basename)
 
         vcfanno = f'vcfanno -p {cores} {conf} {fp}'
         bgzip = f'bgzip > {vcf}'
