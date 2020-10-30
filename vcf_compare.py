@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import json
-import os
+import os, io
 import csv
 import glob
 from argparse import ArgumentParser
@@ -11,6 +11,8 @@ from collections import OrderedDict
 from utils import report, download, run_cmd, get_dict_value, annot_vcf
 from evaluator import evaluate, countrecs
 import copy
+import numpy as np
+import pandas as pd
 
 mutect2_report_fields = {
     'studyId': 'studyId',
@@ -46,10 +48,11 @@ def main():
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=int, default=4)
     parser.add_argument("-c", "--conf", dest="conf", type=str, default="conf/af_only_gnomad.conf")
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
+    parser.add_argument("-e", "--mode", dest="mode", type=str, default="validation")
     args = parser.parse_args()
 
     include = {}
-    file_list = glob.glob("include/*") 
+    file_list = glob.glob('/'.join(['include', args.mode, '*'])) 
     for fl in file_list:    
         wf_name = os.path.splitext(os.path.basename(fl))[0]
         with open(fl, 'r') as f:
@@ -61,7 +64,7 @@ def main():
 
     #download data and annotate
     for wf in ['sanger', 'mutect2', 'mutect2-bqsr']:
-        subfolder = 'evaluate/'+wf
+        subfolder = args.mode + '/' + wf
         if not include.get(wf): continue 
         download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
         download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
@@ -69,10 +72,19 @@ def main():
         # annotate the vcf with gnomad AF, get human readable table
         data_dir = os.path.join("data", subfolder)
         annot_dir = os.path.join("data", subfolder+"_annot_vcf")
-        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
+        bed_dir = os.path.join("data", "beds")
+        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, bed_dir)
 
+    # # union the result from different callers by donor
+    # data_dir = os.path.join("data", args.mode)
+    # union_dir = os.path.join("data", args.mode, 'union')
+    # union_vcf(data_dir, union_dir)
+    
+    
 
+'''
     data_dir = "data/evaluate"
+
     evaluate_result = []
     for fn in glob.glob(os.path.join(data_dir, "*_report", "*-*", "*.*"), recursive=True):
         evaluate_result.append(os.path.basename(fn))
@@ -186,6 +198,7 @@ def main():
     # generate tsv file
     report(evaluate_list, os.path.join(report_dir, 'mutect2_evaluate_result.v2.txt'))
 
+'''
 
 if __name__ == "__main__":
     main()

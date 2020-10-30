@@ -107,7 +107,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
                 run_cmd(cmd)
 
 
-def annot_vcf(cores, conf, data_dir, annot_dir):
+def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
 
     annotated = []
     for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
@@ -133,7 +133,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
         basename = os.path.basename(fp)
         if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
-        bcftools_query(fp)
+        bcftools_query(fp, bed_dir)
 
     #concatenate the query results for each caller
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
@@ -152,10 +152,10 @@ def bcftools_query(vcf, bed_dir=None):
     caller = 'sanger' if basename.split('.')[5] in ['sanger-wgs', 'sanger-wxs'] else 'mutect2'
     evtype = basename.split('.')[7]
     output_base = re.sub(r'.vcf.gz$', '', vcf)
-
-    bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype+'_inflated', 'bed']))
-    if os.path.exists(bed_filename):
-        bcftools = f"bcftools query -R {bed_filename} "
+    
+    if bed_dir:
+        bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype+'_inflated', 'bed']))    
+        bcftools = f"bcftools query -R {bed_filename} " if os.path.exists(bed_filename) else f"bcftools query "        
     else:
         bcftools = f"bcftools query "
 
