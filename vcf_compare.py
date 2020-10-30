@@ -87,7 +87,8 @@ def main():
     bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa)
     
     # call snv_readcound
-    snv_readcount(union_dir, readcount_dir)
+    validated_dir = os.path.join("data", args.mode, "validated")
+    snv_readcount(union_dir, validated_dir, readcount_dir)
 
 '''
     data_dir = "data/evaluate"
