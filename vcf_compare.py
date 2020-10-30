@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount
+from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount, snv_readcount
 from evaluator import evaluate, countrecs
 import copy
 import numpy as np
