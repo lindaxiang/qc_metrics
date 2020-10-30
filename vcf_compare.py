@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf
+from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount
 from evaluator import evaluate, countrecs
 import copy
 import numpy as np
@@ -79,6 +79,12 @@ def main():
     data_dir = os.path.join("data", args.mode)
     union_dir = os.path.join("data", args.mode, 'union')
     union_vcf(data_dir, union_dir)
+
+    # call bam_readcount
+    bam_dir = os.path.join("data", args.mode, "targeted-seq")
+    readcount_dir = os.path.join("data", args.mode, "readcount")
+    ref_fa = "reference/GRCh38/GRCh38_hla_decoy_ebv.fa"
+    bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa)
     
     
 

@@ -155,8 +155,8 @@ def bcftools_query(vcf, bed_dir=None):
     output_base = re.sub(r'.vcf.gz$', '', vcf)
     
     if bed_dir:
-        if evtype == "snv": evtype = evtype + "_mnv" 
-        bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype+'_inflated', 'bed']))    
+        if evtype == "snv": evtype_str = evtype + "_mnv" 
+        bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype_str+'_inflated', 'bed']))    
         bcftools = f"bcftools query -R {bed_filename} " if os.path.exists(bed_filename) else f"bcftools query "        
     else:
         bcftools = f"bcftools query "
@@ -248,8 +248,25 @@ def union_vcf(data_dir, union_dir):
 
             # generate bed from dataframe
             bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
-            df_all['START'] = df['POS'] - 1
-            df_all['END'] = df['POS']
+            df_all['START'] = df['POS']
+            df_all['END'] = df['POS'] + 1
             cols = ['CHROM', 'START', 'END']
             df_all.to_csv(bed_file, index=False, header=False, sep="\t", columns=cols)
-        
+
+
+def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
+    if not os.path.exists(readcount_dir):
+        os.makedirs(readcount_dir)
+    
+    for fn in glob.glob(os.path.join(bam_dir, "*.aln.bam"), recursive=True):
+        bam_rc_file = os.path.join(readcount_dir, os.path.basename(fn) + ".rc")
+        donorId = os.path.basename(fn).split(".")[1]
+        target_bed = glob.glob(os.path.join(union_dir, donorId+'.*.wgs.snv.bed'))[0]
+
+        cmd = f"bam-readcount --reference-fasta {ref_fa} \
+                  --site-list {target_bed} \
+                  --min-mapping-quality 1 \
+                  --max-count 8000 \
+                  --max-warnings 0 {fn} > {bam_rc_file}"
+
+        run_cmd(cmd)
