@@ -9,7 +9,7 @@ import functools
 import re
 import pandas as pd
 import numpy as np
-import date
+from datetime import date
 
 
 def report(donor, report_name):
@@ -183,14 +183,16 @@ def get_info(row):
     info = []
     for col in ['Caller', 'wgsTumourVAF', 'gnomadAF']:
         if pd.isna(row[col]): continue
-        info.append(col+"="+row[col].astype(str))
+        info.append(col+"="+str(row[col]))
     return ';'.join(info)
 
 def union_vcf(data_dir, union_dir):
+    if not os.path.exists(union_dir):
+        os.makedirs(union_dir)
     donor = set()
 
     for fn in glob.glob(os.path.join(data_dir, "*_annot_vcf", "*-*", "*.query.txt"), recursive=True):
-        donor.add(os.path.basename(fp).split("2020")[0])
+        donor.add(os.path.basename(fn).split("2020")[0].rstrip('.'))
    
     for evtype in ['snv', 'indel']:
         for do in donor:
@@ -218,7 +220,7 @@ def union_vcf(data_dir, union_dir):
                 df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna(),
                 df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna()
             ]
-            caller_outputs = ['sanger', 'mutect2', 'mutect2-bqsr', 'sanger, mutect2', 'sanger, mutect2-bqsr', 'mutect2, mutect2-bqsr', 'sanger, mutect2, mutect2-bqsr']
+            caller_outputs = ['sanger', 'mutect2', 'mutect2-bqsr', 'sanger,mutect2', 'sanger,mutect2-bqsr', 'mutect2,mutect2-bqsr', 'sanger,mutect2,mutect2-bqsr']
             df_all['Caller'] = np.select(conditions, caller_outputs, 'other')
 
             VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2', 'AF_mutect2-bqsr']].mean(axis=1)
@@ -230,22 +232,22 @@ def union_vcf(data_dir, union_dir):
             df_all['INFO'] = df[cols].apply(get_info, axis=1)
 
             # generate vcf from dataframe
-            vcf_file = os.path.join(union_dir, '.'.join([do, evtype, 'vcf'])
+            vcf_file = os.path.join(union_dir, '.'.join([do, evtype, 'vcf']))
             date_str = date.today().strftime("%Y%m%d")
-            header = f"""##fileformat=VCFv4.3
-            ##fileDate={date_str}
-            #CHROM POS ID REF ALT QUAL FILTER INFO
-            """
+            header = [f"##fileformat=VCFv4.3", \
+                      f"##fileDate={date_str}", \
+                      f"#CHROM POS ID REF ALT QUAL FILTER INFO"]
             with open(vcf_file, 'w') as vcf:
-                vcf.write(header)
+                vcf.write("\n".join(header))
+                vcf.write("\n")
             cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
             df_all['ID'] = ""
-            df_all['QAUL'] = ""
+            df_all['QUAL'] = ""
             df_all['FILTER'] = ""
             df_all.to_csv(vcf_file, index=False, header=False, sep="\t", mode='a', columns=cols)
 
             # generate bed from dataframe
-            bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed'])
+            bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
             df_all['START'] = df['POS'] - 1
             df_all['END'] = df['POS']
             cols = ['CHROM', 'START', 'END']
