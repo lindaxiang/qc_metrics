@@ -135,37 +135,44 @@ def annot_vcf(cores, conf, data_dir, annot_dir):
         if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
         bcftools_query(fp)
 
-    #concatenate the query results
+    #concatenate the query results for each caller
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
-        prefix = os.path.basename(fp).split("2020")[0]
+        prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
         evtype = os.path.basename(fp).split(".")[7]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "%s.%s.%s.%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
         sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
     
 
-def bcftools_query(vcf):
+def bcftools_query(vcf, bed_dir=None):
     basename = os.path.basename(vcf)
+    donorId, sampleId = basename.split('.')[1:3]
     caller = 'sanger' if basename.split('.')[5] in ['sanger-wgs', 'sanger-wxs'] else 'mutect2'
     evtype = basename.split('.')[7]
     output_base = re.sub(r'.vcf.gz$', '', vcf)
 
+    bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype+'_inflated', 'bed']))
+    if os.path.exists(bed_filename):
+        bcftools = f"bcftools query -R {bed_filename} "
+    else:
+        bcftools = f"bcftools query "
+
     if caller == 'sanger':
         if evtype == 'snv':
-            cmd = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%PM\\t%gnomad_af\\t%gnomad_filter\\n]' \
+            cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%PM\\t%gnomad_af\\t%gnomad_filter\\n]' \
                 -i 'FILTER=\"PASS\"' -s 'TUMOUR' {vcf} > {output_base}.query.txt"
         elif evtype == 'indel':
-            bcftools = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%FD\\t%FC\\t%gnomad_af\\t%gnomad_filter\\n]' \
+            bcftools = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%FD\\t%FC\\t%gnomad_af\\t%gnomad_filter\\n]' \
                 -i 'FILTER=\"PASS\"' -s 'TUMOUR' {vcf}"
             awk = f"awk '{{printf \"%s\\t%s\\t%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$6/$5,$7,$8}}' > {output_base}.query.txt"
             cmd = bcftools + '|' + awk
         else:
             pass
     elif caller == 'mutect2':
-        cmd = f"bcftools query -f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
+        cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
     else:
         pass
-    
+
     run_cmd(cmd)
