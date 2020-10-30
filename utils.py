@@ -260,6 +260,8 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
     
     for fn in glob.glob(os.path.join(bam_dir, "*.aln.bam"), recursive=True):
         bam_rc_file = os.path.join(readcount_dir, os.path.basename(fn) + ".rc")
+        if os.path.isfile(bam_rc_file): continue
+
         projectId, donorId = os.path.basename(fn).split(".")[0:2]
         target_bed = glob.glob(os.path.join(union_dir, projectId+'.'+donorId+'.*.wgs.snv.bed'))[0]
 
@@ -272,7 +274,7 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
         run_cmd(cmd)
 
 
-def snv_readcound(union_dir, readcount_dir):
+def snv_readcount(union_dir, readcount_dir):
     sample = {
         "DO50311": {
             "normal": "SA622503",
@@ -291,7 +293,7 @@ def snv_readcound(union_dir, readcount_dir):
             "tumour": "SA622507"
         }
     }
-    for fn in glob.glob(os.path.join(union_vcf, "*.vcf"), recursive=True):
+    for fn in glob.glob(os.path.join(union_dir, "*.vcf"), recursive=True):
         projectId, donorId, sampleId, library_strategy, evtype, fileformat = os.path.basename(fn).split(".")
         output_vcf = os.path.join(union_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]

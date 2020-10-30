@@ -87,7 +87,7 @@ def main():
     bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa)
     
     # call snv_readcound
-    snv_readcound(union_dir, readcount_dir)
+    snv_readcount(union_dir, readcount_dir)
 
 '''
     data_dir = "data/evaluate"
