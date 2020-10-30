@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value, annot_vcf
+from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf
 from evaluator import evaluate, countrecs
 import copy
 import numpy as np
@@ -75,10 +75,10 @@ def main():
         bed_dir = os.path.join("data", "beds")
         annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, bed_dir)
 
-    # # union the result from different callers by donor
-    # data_dir = os.path.join("data", args.mode)
-    # union_dir = os.path.join("data", args.mode, 'union')
-    # union_vcf(data_dir, union_dir)
+    # union the result from different callers by donor
+    data_dir = os.path.join("data", args.mode)
+    union_dir = os.path.join("data", args.mode, 'union')
+    union_vcf(data_dir, union_dir)
     
     
 

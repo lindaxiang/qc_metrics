@@ -9,6 +9,7 @@ import functools
 import re
 import pandas as pd
 import numpy as np
+import date
 
 
 def report(donor, report_name):
@@ -154,6 +155,7 @@ def bcftools_query(vcf, bed_dir=None):
     output_base = re.sub(r'.vcf.gz$', '', vcf)
     
     if bed_dir:
+        if evtype == "snv": evtype = evtype + "_mnv" 
         bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype+'_inflated', 'bed']))    
         bcftools = f"bcftools query -R {bed_filename} " if os.path.exists(bed_filename) else f"bcftools query "        
     else:
@@ -176,3 +178,76 @@ def bcftools_query(vcf, bed_dir=None):
         pass
 
     run_cmd(cmd)
+
+def get_info(row):
+    info = []
+    for col in ['Caller', 'wgsTumourVAF', 'gnomadAF']:
+        if pd.isna(row[col]): continue
+        info.append(col+"="+row[col].astype(str))
+    return ';'.join(info)
+
+def union_vcf(data_dir, union_dir):
+    donor = set()
+
+    for fn in glob.glob(os.path.join(data_dir, "*_annot_vcf", "*-*", "*.query.txt"), recursive=True):
+        donor.add(os.path.basename(fp).split("2020")[0])
+   
+    for evtype in ['snv', 'indel']:
+        for do in donor:
+            projectId, donorId, sampleId, library_strategy = do.split('.')
+            df = None
+            for caller in ['sanger', 'mutect2', 'mutect2-bqsr']:
+                query_file = glob.glob(os.path.join(data_dir, caller+'_annot_vcf', projectId, do+'*'+evtype+'.query.txt'))
+                df_caller = pd.read_table(query_file[0], sep='\t', \
+                        names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
+                        dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
+                        na_values=".")
+                if df is None:
+                    df = df_caller
+                else:
+                    df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
+                    df = df_all
+
+            # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
+            conditions = [
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].isna(),
+                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].isna(),
+                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].notna(),
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].isna(),
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].notna(),
+                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna(),
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna()
+            ]
+            caller_outputs = ['sanger', 'mutect2', 'mutect2-bqsr', 'sanger, mutect2', 'sanger, mutect2-bqsr', 'mutect2, mutect2-bqsr', 'sanger, mutect2, mutect2-bqsr']
+            df_all['Caller'] = np.select(conditions, caller_outputs, 'other')
+
+            VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2', 'AF_mutect2-bqsr']].mean(axis=1)
+            df_all['wgsTumourVAF'] = VAF
+            gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2', 'gnomad_af_mutect2-bqsr']].mean(axis=1)
+            df_all['gnomadAF'] = gnomad_af
+            # format INFO field
+            cols = ['Caller', 'wgsTumourVAF', 'gnomadAF']
+            df_all['INFO'] = df[cols].apply(get_info, axis=1)
+
+            # generate vcf from dataframe
+            vcf_file = os.path.join(union_dir, '.'.join([do, evtype, 'vcf'])
+            date_str = date.today().strftime("%Y%m%d")
+            header = f"""##fileformat=VCFv4.3
+            ##fileDate={date_str}
+            #CHROM POS ID REF ALT QUAL FILTER INFO
+            """
+            with open(vcf_file, 'w') as vcf:
+                vcf.write(header)
+            cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+            df_all['ID'] = ""
+            df_all['QAUL'] = ""
+            df_all['FILTER'] = ""
+            df_all.to_csv(vcf_file, index=False, header=False, sep="\t", mode='a', columns=cols)
+
+            # generate bed from dataframe
+            bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed'])
+            df_all['START'] = df['POS'] - 1
+            df_all['END'] = df['POS']
+            cols = ['CHROM', 'START', 'END']
+            df_all.to_csv(bed_file, index=False, header=False, sep="\t", columns=cols)
+        
