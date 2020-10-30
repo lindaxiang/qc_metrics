@@ -260,8 +260,8 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
     
     for fn in glob.glob(os.path.join(bam_dir, "*.aln.bam"), recursive=True):
         bam_rc_file = os.path.join(readcount_dir, os.path.basename(fn) + ".rc")
-        donorId = os.path.basename(fn).split(".")[1]
-        target_bed = glob.glob(os.path.join(union_dir, donorId+'.*.wgs.snv.bed'))[0]
+        projectId, donorId = os.path.basename(fn).split(".")[0:2]
+        target_bed = glob.glob(os.path.join(union_dir, projectId+'.'+donorId+'.*.wgs.snv.bed'))[0]
 
         cmd = f"bam-readcount --reference-fasta {ref_fa} \
                   --site-list {target_bed} \
