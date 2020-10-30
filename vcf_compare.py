@@ -86,7 +86,8 @@ def main():
     ref_fa = "reference/GRCh38/GRCh38_hla_decoy_ebv.fa"
     bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa)
     
-    
+    # call snv_readcound
+    snv_readcound(union_dir, readcount_dir)
 
 '''
     data_dir = "data/evaluate"
