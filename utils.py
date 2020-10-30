@@ -274,7 +274,7 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
         run_cmd(cmd)
 
 
-def snv_readcount(union_dir, readcount_dir):
+def snv_readcount(union_dir, validated_dir, readcount_dir):
     sample = {
         "DO50311": {
             "normal": "SA622503",
@@ -293,9 +293,13 @@ def snv_readcount(union_dir, readcount_dir):
             "tumour": "SA622507"
         }
     }
+
+    if not os.path.exists(validated_dir):
+        os.makedirs(validated_dir)
+
     for fn in glob.glob(os.path.join(union_dir, "*.vcf"), recursive=True):
         projectId, donorId, sampleId, library_strategy, evtype, fileformat = os.path.basename(fn).split(".")
-        output_vcf = os.path.join(union_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
+        output_vcf = os.path.join(validated_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
         tumour_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['tumour'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
 
@@ -322,7 +326,7 @@ def snv_readcount(union_dir, readcount_dir):
         sed = f"sed -e 's/;;/;/'"
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
-        cmd = '|'.join([snv_rc, snv_indel_call, sed, grep, sort])
+        cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
         print(cmd)
 
         run_cmd(cmd)
