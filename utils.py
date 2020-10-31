@@ -158,12 +158,9 @@ def bcftools_query(vcf, bed_dir=None):
         caller = 'validated'
     else:
         return
-    if caller in ['sanger', 'mutect2']:
-        evtype = basename.split('.')[-3]
-        output_base = re.sub(r'.vcf.gz$', '', vcf)
-    else:
-        evtype = basename.split('.')[-2]
-        output_base = re.sub(r'.vcf$', '', vcf)
+
+    evtype = basename.split('.')[-3]
+    output_base = re.sub(r'.vcf.gz$', '', vcf)
     
     if bed_dir:
         evtype_str = evtype + "_mnv" if evtype == "snv" else evtype
@@ -194,7 +191,7 @@ def bcftools_query(vcf, bed_dir=None):
 
 def get_info(row):
     info = []
-    for col in ['Caller', 'wgsTumourVAF', 'gnomadAF']:
+    for col in ['Callers', 'wgsTumourVAF', 'gnomadAF']:
         if pd.isna(row[col]): continue
         info.append(col+"="+str(row[col]))
     return ';'.join(info)
@@ -234,14 +231,14 @@ def union_vcf(data_dir, union_dir):
                 df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna()
             ]
             caller_outputs = ['sanger', 'mutect2', 'mu2-bqsr', 'sanger,mutect2', 'sanger,mu2-bqsr', 'mutect2,mu2-bqsr', 'sanger,mutect2,mu2-bqsr']
-            df_all['Caller'] = np.select(conditions, caller_outputs, 'other')
+            df_all['Callers'] = np.select(conditions, caller_outputs, 'other')
 
             VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2', 'AF_mutect2-bqsr']].mean(axis=1)
             df_all['wgsTumourVAF'] = VAF
             gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2', 'gnomad_af_mutect2-bqsr']].mean(axis=1)
             df_all['gnomadAF'] = gnomad_af
             # format INFO field
-            cols = ['Caller', 'wgsTumourVAF', 'gnomadAF']
+            cols = ['Callers', 'wgsTumourVAF', 'gnomadAF']
             df_all['INFO'] = df[cols].apply(get_info, axis=1)
 
             # generate vcf from dataframe
@@ -325,6 +322,8 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
 ##INFO=<ID=TumourReads,Number=1,Type=Integer,Description="Total number of reads in tumour sample">
 ##INFO=<ID=NormalReads,Number=1,Type=Integer,Description="Total number of reads in normal sample">
 ##INFO=<ID=Validation_status,Number=.,Type=String,Description="Validation status, as info field">
+##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">
+##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">
 ##FILTER=<ID=LOWDEPTH,Description="Insufficient depth to validate the call">
 ##FILTER=<ID=NOTSEEN,Description="Variant not seen in Tumour">
 ##FILTER=<ID=STRANDBIAS,Description="Too much strand bias in Tumour sample to validate the call">
@@ -340,7 +339,26 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         sed = f"sed -e 's/;;/;/'"
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
-        cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
+        bgzip = f'bgzip {output_vcf} > {output_vcf}.gz'
+        tabix = f'tabix -p vcf {output_vcf}.gz'
+        tbi = 
+        cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort]) + ' && ' + bgzip + ' && ' + tabix
         #print(cmd)
 
         run_cmd(cmd)
+
+def vcf2tsv(validated_dir):
+    #use bcftools to query the annotated vcf
+    for fp in glob.glob(os.path.join(validated_dir, "*.vcf.gz"), recursive=True):
+        bcftools_query(fp)
+
+    #concatenate the query results for all donors
+    for fp in glob.glob(os.path.join(validated_dir, "*.query.txt"), recursive=True):
+        projectId, donorId = os.path.basename(fp).split(".")[0:2]
+        evtype = os.path.basename(fp).split(".")[-3]
+        cat = f'cat {fp}'
+        awk = f'awk \'{{printf "%s\\t%s\\t%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$4,$5,$6,$7}}\''
+        sed = f'sed "s/^/{projectId}\\t{donorId}\\t/g" >> {validated_dir}.{evtype}.all'
+        cmd = '|'.join([cat, awk, sed])
+        run_cmd(cmd)
+

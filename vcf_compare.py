@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount, snv_readcount_annot, bcftools_query
+from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount, snv_readcount_annot, vcf2tsv
 from evaluator import evaluate, countrecs
 import copy
 import numpy as np
@@ -91,9 +91,7 @@ def main():
     snv_readcount_annot(union_dir, validated_dir, readcount_dir)
 
     # generate tsv output for easy analysis
-    #use bcftools to query the annotated vcf
-    for fp in glob.glob(os.path.join(validated_dir, "*.vcf"), recursive=True):
-        bcftools_query(fp)
+    vcf2tsv(validated_dir)
 
 '''
     data_dir = "data/evaluate"
