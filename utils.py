@@ -339,12 +339,13 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         sed = f"sed -e 's/;;/;/'"
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
-        bgzip = f'bgzip {output_vcf} > {output_vcf}.gz'
-        tabix = f'tabix -p vcf {output_vcf}.gz'
-        tbi = 
-        cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort]) + ' && ' + bgzip + ' && ' + tabix
+        cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
         #print(cmd)
+        run_cmd(cmd)
 
+        bgzip = f'bgzip {output_vcf}'
+        tabix = f'tabix -p vcf {output_vcf}.gz'
+        cmd =  bgzip + ' && ' + tabix
         run_cmd(cmd)
 
 def vcf2tsv(validated_dir):
