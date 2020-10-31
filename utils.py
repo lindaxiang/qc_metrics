@@ -340,13 +340,11 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
         cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
-        print(cmd)
         run_cmd(cmd)
-        cat = f'cat {output_vcf}''
+        cat = f'cat {output_vcf}'
         bgzip = f'bgzip > {output_vcf}.gz'
         tabix = f'tabix -p vcf {output_vcf}.gz'
         cmd =  cat + ' | ' + bgzip + ' && ' + tabix
-        print(cmd)
         run_cmd(cmd)
 
 def vcf2tsv(validated_dir):
@@ -359,8 +357,8 @@ def vcf2tsv(validated_dir):
         projectId, donorId = os.path.basename(fp).split(".")[0:2]
         evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "%s\\t%s\\t%s\\t%s\\t%f\\t%s\\t%s\\n\",$1,$2,$4,$5,$6,$7}}\''
-        sed = f'sed "s/^/{projectId}\\t{donorId}\\t/g" >> {validated_dir}.{evtype}.all'
+        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%f\\t%f\\n\",$1,$2,$3,$4,$5,$6,$7,$8}}\''
+        sed = f'sed "s/^/{donorId}\\t/g" >> {validated_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
 
