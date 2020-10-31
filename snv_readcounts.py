@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Routines for reading in paired bam-readcount files, 
 and comparing to a somatic VCF

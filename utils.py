@@ -297,7 +297,7 @@ def snv_readcount(union_dir, validated_dir, readcount_dir):
     if not os.path.exists(validated_dir):
         os.makedirs(validated_dir)
 
-    for fn in glob.glob(os.path.join(union_dir, "*.vcf"), recursive=True):
+    for fn in glob.glob(os.path.join(union_dir, "*.snv.vcf"), recursive=True):
         projectId, donorId, sampleId, library_strategy, evtype, fileformat = os.path.basename(fn).split(".")
         output_vcf = os.path.join(validated_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
@@ -322,7 +322,7 @@ def snv_readcount(union_dir, validated_dir, readcount_dir):
             vcf.write(header+"\n")
 
         snv_rc = f"./snv_readcounts.py {fn} {normal_rc} {tumour_rc}"
-        snv_indel_call = f"./scripts/snv_indel_call.py --error 0.01 --callthreshold 0.02 --strandbias 0.001 --germlineprob 0.01 --mindepth 30"
+        snv_indel_call = f"./snv_indel_call.py --error 0.01 --callthreshold 0.02 --strandbias 0.001 --germlineprob 0.01 --mindepth 30"
         sed = f"sed -e 's/;;/;/'"
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
