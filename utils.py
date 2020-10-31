@@ -316,8 +316,9 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
         tumour_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['tumour'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
 
-        header = """    
-##fileformat=VCFv4.3
+        date_str = date.today().strftime("%Y%m%d")
+        header = f"""##fileformat=VCFv4.3
+##fileDate={date_str}
 ##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">
 ##INFO=<ID=NormalEvidenceReads,Number=2,Type=Integer,Description="Number of reads in normal sample supporting the alt allele (forward,backward)">
 ##INFO=<ID=TumourEvidenceReads,Number=2,Type=Integer,Description="Number of reads in tumour sample supporting the alt allele (forward,backward)">
@@ -340,6 +341,6 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
         cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
-        print(cmd)
+        #print(cmd)
 
         run_cmd(cmd)
