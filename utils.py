@@ -220,7 +220,7 @@ def union_vcf(data_dir, union_dir):
                 df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna(),
                 df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna()
             ]
-            caller_outputs = ['sanger', 'mutect2', 'mutect2-bqsr', 'sanger,mutect2', 'sanger,mutect2-bqsr', 'mutect2,mutect2-bqsr', 'sanger,mutect2,mutect2-bqsr']
+            caller_outputs = ['sanger', 'mutect2', 'mu2-bqsr', 'sanger,mutect2', 'sanger,mu2-bqsr', 'mutect2,mu2-bqsr', 'sanger,mutect2,mu2-bqsr']
             df_all['Caller'] = np.select(conditions, caller_outputs, 'other')
 
             VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2', 'AF_mutect2-bqsr']].mean(axis=1)
@@ -274,7 +274,7 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
         run_cmd(cmd)
 
 
-def snv_readcount(union_dir, validated_dir, readcount_dir):
+def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
     sample = {
         "DO50311": {
             "normal": "SA622503",
@@ -319,7 +319,7 @@ def snv_readcount(union_dir, validated_dir, readcount_dir):
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
 """
         with open(output_vcf, 'w') as vcf:
-            vcf.write(header+"\n")
+            vcf.write(header)
 
         snv_rc = f"./snv_readcounts.py {fn} {normal_rc} {tumour_rc}"
         snv_indel_call = f"./snv_indel_call.py --error 0.01 --callthreshold 0.02 --strandbias 0.001 --germlineprob 0.01 --mindepth 30"

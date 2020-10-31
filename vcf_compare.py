@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 import sys
 import subprocess
 from collections import OrderedDict
-from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount, snv_readcount
+from utils import report, download, run_cmd, get_dict_value, annot_vcf, union_vcf, bam_readcount, snv_readcount_annot
 from evaluator import evaluate, countrecs
 import copy
 import numpy as np
@@ -88,7 +88,7 @@ def main():
     
     # call snv_readcound
     validated_dir = os.path.join("data", args.mode, "validated")
-    snv_readcount(union_dir, validated_dir, readcount_dir)
+    snv_readcount_annot(union_dir, validated_dir, readcount_dir)
 
 '''
     data_dir = "data/evaluate"

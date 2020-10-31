@@ -1,0 +1,41 @@
+#!/bin/bash
+
+DEFVCFDIR=data/validation/validated
+DEFTYPE=snv
+VCFDIR=${VCFDIR:-$DEFVCFDIR}
+TYPE=${TYPE:-$DEFTYPE}
+
+if [ "$TYPE" == "snv" ]
+then
+    callers="sanger mutect2 mu2-bqsr"
+elif [ "$TYPE" == "indel" ]
+then
+    callers="broad_mutect crg_clindel dkfz novobreak oicr_sga sanger smufin wustl"
+elif [ "$TYPE" == "sv" ]
+then
+    callers="broad_merged destruct embl_delly novobreak oicr_bl sanger smufin wustl"
+fi
+
+echo "Total calls          : " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -cv "^#" )
+echo "Total validated calls: " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -c "PASS" )
+echo ""
+for caller in ${callers}
+do
+    falsepos=$( grep -v PASS ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}" )
+    truepos=$( grep PASS ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}" )
+    falseneg=$( grep PASS ${VCFDIR}/*.${TYPE}.vcf | grep -vc "${caller}" )
+    npos=$(( falsepos + truepos ))
+    sensitivity=$( echo "$truepos / ($truepos + $falseneg)" | bc -l  )
+    precision=$( echo "$truepos / ($truepos + $falsepos)" | bc -l )
+    f1=$( echo "2*$truepos/(2*$truepos + $falsepos + $falseneg)" | bc -l )
+    printf "%s: ncalls %5.3f  npass %5.3f  sensitivity %5.3f  precision %5.3f  F1 %5.3f\n" $caller $npos $truepos $sensitivity $precision $f1
+    echo "		private	others	total"
+    for state in PASS NOTSEEN GERMLIN STRANDB
+    do
+        private=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "Callers=${caller};")
+        total=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}")
+        other=$(( total - private ))
+        echo "$state		$private	$other	$total"
+    done
+    echo ""
+done
