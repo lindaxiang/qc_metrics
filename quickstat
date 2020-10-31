@@ -16,12 +16,12 @@ then
     callers="broad_merged destruct embl_delly novobreak oicr_bl sanger smufin wustl"
 fi
 
-echo "Total calls          : " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -cv "^#" )
-echo "Total validated calls: " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -c "PASS" )
+echo "Total $TYPE calls          : " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -cv "^#" )
+echo "Total validated $TYPE calls: " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -c "PASS" )
 echo ""
 for caller in ${callers}
 do
-    falsepos=$( grep -v PASS ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}" )
+    falsepos=$( grep -v PASS ${VCFDIR}/*.${TYPE}.vcf | grep -v LOWDEPTH ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}" )
     truepos=$( grep PASS ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}" )
     falseneg=$( grep PASS ${VCFDIR}/*.${TYPE}.vcf | grep -vc "${caller}" )
     npos=$(( falsepos + truepos ))
@@ -30,9 +30,9 @@ do
     f1=$( echo "2*$truepos/(2*$truepos + $falsepos + $falseneg)" | bc -l )
     printf "%s: ncalls %5.3f  npass %5.3f  sensitivity %5.3f  precision %5.3f  F1 %5.3f\n" $caller $npos $truepos $sensitivity $precision $f1
     echo "		private	others	total"
-    for state in PASS NOTSEEN GERMLIN STRANDB
+    for state in PASS NOTSEEN GERMLIN STRANDB LOWDEPT
     do
-        private=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "Callers=${caller};")
+        private=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "Caller=${caller};")
         total=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}")
         other=$(( total - private ))
         echo "$state		$private	$other	$total"

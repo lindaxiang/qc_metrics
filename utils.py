@@ -132,8 +132,8 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
     
     #use bcftools to query the annotated vcf
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
-        basename = os.path.basename(fp)
-        if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
+        # basename = os.path.basename(fp)
+        # if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
         bcftools_query(fp, bed_dir)
 
     #concatenate the query results for each caller
@@ -149,10 +149,21 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
 
 def bcftools_query(vcf, bed_dir=None):
     basename = os.path.basename(vcf)
-    donorId, sampleId = basename.split('.')[1:3]
-    caller = 'sanger' if basename.split('.')[5] in ['sanger-wgs', 'sanger-wxs'] else 'mutect2'
-    evtype = basename.split('.')[7]
-    output_base = re.sub(r'.vcf.gz$', '', vcf)
+    donorId = basename.split('.')[1]
+    if 'sanger' in basename:
+        caller = 'sanger' 
+    elif 'gatk-mutect2' in basename:
+        caller = 'mutect2'
+    elif 'validated' in basename:
+        caller = 'validated'
+    else:
+        return
+    if caller in ['sanger', 'mutect2']:
+        evtype = basename.split('.')[-3]
+        output_base = re.sub(r'.vcf.gz$', '', vcf)
+    else:
+        evtype = basename.split('.')[-2]
+        output_base = re.sub(r'.vcf$', '', vcf)
     
     if bed_dir:
         if evtype == "snv": evtype_str = evtype + "_mnv" 
@@ -174,6 +185,8 @@ def bcftools_query(vcf, bed_dir=None):
             pass
     elif caller == 'mutect2':
         cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
+    elif caller == 'validated':
+        cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%Validation_status\\t%Caller\\t%wgsTumourVAF\\t%gnomadAF\\n]' {vcf} > {output_base}.query.txt" 
     else:
         pass
 
