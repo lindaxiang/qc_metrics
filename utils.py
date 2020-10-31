@@ -137,9 +137,10 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
         bcftools_query(fp, bed_dir)
 
     #concatenate the query results for each caller
-    filename = '.'.join([annot_dir, evtype, 'all'])
-    if os.path.exists(filename):
-       os.remove(filename)
+    for evtype in ['snv', 'indel']:
+        filename = '.'.join([annot_dir, evtype, 'all'])
+        if os.path.exists(filename):
+            os.remove(filename)
         
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
         prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
@@ -356,9 +357,10 @@ def vcf2tsv(validated_dir):
     for fp in glob.glob(os.path.join(validated_dir, "*.vcf.gz"), recursive=True):
         bcftools_query(fp)
 
-    filename = '.'.join([validated_dir, evtype, 'all'])
-    if os.path.exists(filename):
-       os.remove(filename)
+    for evtype in ['snv', 'indel']:
+        filename = '.'.join([validated_dir, evtype, 'all'])
+        if os.path.exists(filename):
+            os.remove(filename)
     #concatenate the query results for all donors
     for fp in glob.glob(os.path.join(validated_dir, "*.query.txt"), recursive=True):
         projectId, donorId = os.path.basename(fp).split(".")[0:2]
