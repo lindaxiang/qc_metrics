@@ -166,7 +166,7 @@ def bcftools_query(vcf, bed_dir=None):
         output_base = re.sub(r'.vcf$', '', vcf)
     
     if bed_dir:
-        if evtype == "snv": evtype_str = evtype + "_mnv" 
+        evtype_str = evtype + "_mnv" if evtype == "snv" else evtype
         bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype_str+'_inflated', 'bed']))    
         bcftools = f"bcftools query -R {bed_filename} " if os.path.exists(bed_filename) else f"bcftools query "        
     else:
