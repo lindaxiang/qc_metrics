@@ -183,7 +183,7 @@ def bcftools_query(vcf, bed_dir=None):
     elif caller == 'mutect2':
         cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
     elif caller == 'validated':
-        cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%Validation_status\\t%Caller\\t%wgsTumourVAF\\t%gnomadAF\\n]' {vcf} > {output_base}.query.txt" 
+        cmd = bcftools + f"-f '%CHROM\\t%POS\\t%REF\\t%ALT\\t%Validation_status\\t%Callers\\t%wgsTumourVAF\\t%gnomadAF\\n]' {vcf} > {output_base}.query.txt" 
     else:
         pass
 
@@ -258,8 +258,8 @@ def union_vcf(data_dir, union_dir):
 
             # generate bed from dataframe
             bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
-            df_all['START'] = df['POS']
-            df_all['END'] = df['POS'] + 1
+            df_all['START'] = df['POS'] - 1
+            df_all['END'] = df['POS']
             cols = ['CHROM', 'START', 'END']
             df_all.to_csv(bed_file, index=False, header=False, sep="\t", columns=cols)
 
@@ -276,7 +276,7 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
         target_bed = glob.glob(os.path.join(union_dir, projectId+'.'+donorId+'.*.wgs.snv.bed'))[0]
 
         cmd = f"bam-readcount --reference-fasta {ref_fa} \
-                  --site-list {target_bed} \
+                  --site-list <( awk '{{ printf \"%s\\t%d\\t%d\\n\",$1,$2+1,$3+1 }}' {target_bed} ) \
                   --min-mapping-quality 1 \
                   --max-count 8000 \
                   --max-warnings 0 {fn} > {bam_rc_file}"
@@ -340,12 +340,13 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         grep = f'grep -v "^#"'
         sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
         cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
-        #print(cmd)
+        print(cmd)
         run_cmd(cmd)
-
-        bgzip = f'bgzip {output_vcf}'
+        cat = f'cat {output_vcf}''
+        bgzip = f'bgzip > {output_vcf}.gz'
         tabix = f'tabix -p vcf {output_vcf}.gz'
-        cmd =  bgzip + ' && ' + tabix
+        cmd =  cat + ' | ' + bgzip + ' && ' + tabix
+        print(cmd)
         run_cmd(cmd)
 
 def vcf2tsv(validated_dir):

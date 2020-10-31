@@ -32,7 +32,7 @@ do
     echo "		private	others	total"
     for state in PASS NOTSEEN GERMLIN STRANDB LOWDEPT
     do
-        private=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "Caller=${caller};")
+        private=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "Callers=${caller};")
         total=$( grep $state ${VCFDIR}/*.${TYPE}.vcf | grep -c "${caller}")
         other=$(( total - private ))
         echo "$state		$private	$other	$total"

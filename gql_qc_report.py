@@ -26,6 +26,34 @@ def udf(x, y):
     else:
         return
 
+def get_job(gql_dump, exclude=None):
+    job = []
+    with open(gql_dump, 'r') as fp:
+        for fline in fp:
+            job_dict = OrderedDict()
+            analysis = json.loads(fline)
+            job_dict = {
+                'submitter_donor_id': analysis['donors'][0]['submitterDonorId'],
+                'submitter_sample_id': analysis['donors'][0]['specimens'][0]['samples'][0]['submitterSampleId'],
+                'tumourNormalDesignation': analysis['donors'][0]['specimens'][0]['tumourNormalDesignation'],
+                'sequencing_stategy': analysis['experiment']['experimental_strategy'] if analysis['experiment'].get('experimental_strategy') else analysis['experiment']['library_strategy'],
+                'donor_id': analysis['donors'][0]['donorId'],
+                'sample_id': analysis['donors'][0]['specimens'][0]['samples'][0]['sampleId'],
+                'study_id': analysis['studyId'],
+                'analysis_id': analysis['analysisId']
+            }
+            
+            complete = False
+            if analysis.get('inputForRuns'): 
+                for run in analysis.get('inputForRuns'):
+                    if run.get('state') == 'COMPLETE' and run.get('producedAnalyses'): 
+                        complete = True
+            
+            if not complete: job.append(copy.deepcopy(job_dict))
+    return job
+
+
+
 def process(gql_dump, suppress):
     with open(gql_dump, 'r') as fp:
         for fline in fp:
@@ -95,14 +123,19 @@ def main():
     suppress = process(os.path.join(gql_dump_path, 'sequencing_experiment.json'), suppress)
     suppress = process(os.path.join(gql_dump_path, 'sequencing_alignment.json'), suppress)
     #print(suppress_dict)
+    alignment_job = get_job(os.path.join(gql_dump_path, 'sequencing_experiment.json'))
 
     report_dir = "report"
-    with open(os.path.join(report_dir, 'suppress.json'), 'w') as f:
-        for s in suppress:
-            f.write(json.dumps(s)+'\n')
+    if suppress:
+        with open(os.path.join(report_dir, 'suppress.json'), 'w') as f:
+            for s in suppress:
+                f.write(json.dumps(s)+'\n')
 
-    # generate tsv file
-    report(suppress, os.path.join(report_dir, 'suppress.txt'))
+        # generate tsv file
+        report(suppress, os.path.join(report_dir, 'suppress.txt'))
+    
+    if alignment_job:
+        report(alignment_job, os.path.join(report_dir, 'alignment_job.txt'))
 
 if __name__ == "__main__":
     main()

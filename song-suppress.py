@@ -4,6 +4,8 @@ import json
 import os
 import requests
 import json
+from argparse import ArgumentParser
+import time
 
 
 def song_operation(endpoint, operation, token, data=None):
@@ -34,22 +36,31 @@ def song_operation(endpoint, operation, token, data=None):
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument("-r", "--report", dest="report", type=str, required=True, help="report file containing analysis info to suppress")
+    parser.add_argument("-r", "--report", dest="report", type=str, help="report file containing analysis info to suppress")
+    parser.add_argument("-l", "--analysis_list", dest="analysis_list", type=str, help="file containing analysis info to suppress")
     parser.add_argument("-m", "--song_url", dest="song_url", type=str, default="https://song.rdpc.cancercollaboratory.org", help="SONG URL")
     parser.add_argument("-s", "--score_url", dest="score_url", type=str, default="https://score.rdpc.cancercollaboratory.org", help="SCORE URL")
-    parser.add_argument("-t", "--token_file", dest="token_file", type=str, default=".access_token_prod", help="Token file")
+    parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     args = parser.parse_args()
-    
-    with open(args.token_file, 'r') as t:
-        token = t.read().strip()
 
-    with open(args.report, 'r') as fp:
-        for fline in fp:
-            run = json.loads(fline)
-            for a in run.get('run_output_analysis_to_suppress'):
-                endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, run.get('studyId'), a)
+    if args.report:
+        with open(args.report, 'r') as fp:
+            for fline in fp:
+                run = json.loads(fline)
+                for a in run.get('run_output_analysis_to_suppress'):
+                    endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, run.get('studyId'), a)
+                    operation = 'analysis_suppress'
+                    song_operation(endpoint, operation, args.token)
+    
+    if args.analysis_list:
+        with open(args.analysis_list, 'r') as fp:
+            for fline in fp:
+                if fline.startswith('analysisId'): continue
+                analysisId, studyId = fline.split("\t")[0:2]
+                print(analysisId)
+                endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, studyId, analysisId)
                 operation = 'analysis_suppress'
-                song_operation(endpoint, operation, token)
+                song_operation(endpoint, operation, args.token)
     
 
 if __name__ == "__main__":

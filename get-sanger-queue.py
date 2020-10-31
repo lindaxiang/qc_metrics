@@ -7,8 +7,17 @@ import csv
 from argparse import ArgumentParser
 import glob
 
+workflow_record = {
+    'dna-seq-alignment': 'dna_seq_alignment',
+    'DNA Seq Alignment': 'dna_seq_alignment',
+    'Sanger WGS Variant Calling': 'sanger_wgs_variant_calling',
+    'Sanger WXS Variant Calling': 'sanger_wxs_variant_calling',
+    'GATK Mutect2 Variant Calling': 'gatk_mutect2_variant_calling'
+}
+
 def get_analysis(file_dump):
     report_analysis = {}
+    processed_list = {}
     with open(file_dump, 'r') as fp:
         for fline in fp:
             analysis = json.loads(fline)            
@@ -30,7 +39,7 @@ def get_analysis(file_dump):
             if analysis.get('workflow'):
                 workflow_name = analysis['workflow']['workflow_name'] if analysis['workflow'].get('workflow_name') else analysis['workflow']['name']
                 workflow_version = analysis['workflow']['workflow_version'] if analysis['workflow'].get('workflow_version') else analysis['workflow']['version']
-                if workflow_name in ['Sanger WGS Variant Calling', 'Sanger WXS Variant Calling']:
+                if workflow_name in ['Sanger WGS Variant Calling', 'Sanger WXS Variant Calling', 'GATK Mutect2 Variant Calling']:
                     if analysis['workflow']['inputs'][0].get('tumour_analysis_id'):
                         tumour_analysis_id = analysis['workflow']['inputs'][0]['tumour_analysis_id']
                         normal_analysis_id = analysis['workflow']['inputs'][1]['normal_analysis_id']
@@ -43,14 +52,14 @@ def get_analysis(file_dump):
                         'workflow_name': workflow_name,
                         'workflow_version': workflow_version
                     }
-                    record_type = 'sanger_' + experimental_strategy.lower() + '_variant_calling'
+                    record_type = workflow_record.get(workflow_name)
                 elif workflow_name in ['dna-seq-alignment', 'DNA Seq Alignment']:
                     workflow_info = {
                         'workflow_input_analysis_id': analysis['workflow']['inputs'][0]['input_analysis_id'],
                         'workflow_name': workflow_name,
                         'workflow_version': workflow_version
                     }
-                    record_type = 'dna_seq_alignment_' + experimental_strategy.lower()
+                    record_type = workflow_record.get(workflow_name)
                 else:
                     pass
             else:
@@ -61,7 +70,10 @@ def get_analysis(file_dump):
 
             if not report_analysis.get(record_type): report_analysis[record_type] = []
             report_analysis[record_type].append(record)
-    return report_analysis
+
+            if not processed_list.get(record_type): processed_list[record_type] = set()
+            processed_list[record_type].add(analysis['samples'][0]['sampleId'])
+    return report_analysis, processed_list
 
 def process_sequencing_alignment(file_dump, exclude_alignment_analysis):
     job = {}
@@ -148,7 +160,7 @@ def main():
                 annotation['schedule_list'].add(line.rstrip())
     
 
-    report_analysis = get_analysis(song_dump)
+    report_analysis, processed_list = get_analysis(song_dump)
     for k, v in report_analysis.items():
         report(v, 'report/report_'+k+'.tsv')
 
