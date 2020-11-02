@@ -274,7 +274,7 @@ def union_vcf(data_dir, union_dir):
             # generate bed from dataframe
             bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
             df_all['START'] = df['POS']
-            df_all['END'] = df['POS'] + 1
+            df_all['END'] = df['POS'] + df['ALT'].str.len()
             cols = ['CHROM', 'START', 'END']
             df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
             
