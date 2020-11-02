@@ -276,7 +276,12 @@ def union_vcf(data_dir, union_dir):
             df_all['START'] = df['POS']
             df_all['END'] = df['POS'] + 1
             cols = ['CHROM', 'START', 'END']
-            df_all.to_csv(bed_file, index=False, header=False, sep="\t", columns=cols)
+            df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
+            
+            sort = f'sort -k1,1 -k2,2n -V {bed_file}.csv > {bed_file}'
+            rm = f'rm {bed_file}.csv'
+            cmd = sort + "&&" + rm
+            run_cmd(cmd)
 
 
 def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
@@ -353,7 +358,7 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         snv_indel_call = f"./snv_indel_call.py --error 0.01 --callthreshold 0.02 --strandbias 0.001 --germlineprob 0.01 --mindepth 30"
         sed = f"sed -e 's/;;/;/'"
         grep = f'grep -v "^#"'
-        sort = f'sort -k1,1 -k2,2n  >> {output_vcf}'
+        sort = f'sort -k1,1 -k2,2n -V  >> {output_vcf}'
         cmd = ' | '.join([snv_rc, snv_indel_call, sed, grep, sort])
         run_cmd(cmd)
         cat = f'cat {output_vcf}'
