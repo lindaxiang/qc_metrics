@@ -249,17 +249,26 @@ def union_vcf(data_dir, union_dir):
             # generate vcf from dataframe
             vcf_file = os.path.join(union_dir, '.'.join([do, evtype, 'vcf']))
             date_str = date.today().strftime("%Y%m%d")
-            header = [f"##fileformat=VCFv4.3", \
-                      f"##fileDate={date_str}", \
-                      f"#CHROM POS ID REF ALT QUAL FILTER INFO"]
+            header = f"""##fileformat=VCFv4.3
+##fileDate={date_str}
+##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">'
+##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">'
+##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">'
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+"""
             with open(vcf_file, 'w') as vcf:
-                vcf.write("\n".join(header))
-                vcf.write("\n")
+                vcf.write(header)
             cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
             df_all['ID'] = ""
             df_all['QUAL'] = ""
             df_all['FILTER'] = ""
             df_all.to_csv(vcf_file, index=False, header=False, sep="\t", mode='a', columns=cols)
+
+            cat = f'cat {vcf_file}'
+            bgzip = f'bgzip > {vcf_file}.gz'
+            tabix = f'tabix -p vcf {vcf_file}.gz'
+            cmd =  cat + ' | ' + bgzip + ' && ' + tabix
+            run_cmd(cmd)
 
             # generate bed from dataframe
             bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
