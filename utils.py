@@ -263,8 +263,8 @@ def union_vcf(data_dir, union_dir):
 
             # generate bed from dataframe
             bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
-            df_all['START'] = df['POS'] - 1
-            df_all['END'] = df['POS']
+            df_all['START'] = df['POS']
+            df_all['END'] = df['POS'] + 1
             cols = ['CHROM', 'START', 'END']
             df_all.to_csv(bed_file, index=False, header=False, sep="\t", columns=cols)
 
@@ -281,7 +281,7 @@ def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
         target_bed = glob.glob(os.path.join(union_dir, projectId+'.'+donorId+'.*.wgs.snv.bed'))[0]
 
         cmd = f"bam-readcount --reference-fasta {ref_fa} \
-                  --site-list <( awk '{{ printf \"%s\\t%d\\t%d\\n\",$1,$2+1,$3+1 }}' {target_bed} ) \
+                  --site-list {target_bed} \
                   --min-mapping-quality 1 \
                   --max-count 8000 \
                   --max-warnings 0 {fn} > {bam_rc_file}"
@@ -366,8 +366,8 @@ def vcf2tsv(validated_dir):
         projectId, donorId = os.path.basename(fp).split(".")[0:2]
         evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%f\\t%f\\n\",$1,$2,$3,$4,$5,$6,$7,$8}}\''
-        sed = f'sed "s/^/{donorId}\\t/g" >> {validated_dir}.{evtype}.all'
+        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7,$8}}\''
+        sed = f'sed "s/^/{donorId}/g" >> {validated_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
 
