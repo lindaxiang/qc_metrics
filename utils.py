@@ -264,7 +264,7 @@ def union_vcf(data_dir, union_dir):
             df_all['FILTER'] = ""
             df_all.to_csv(vcf_file+'.csv', index=False, header=False, sep="\t", columns=cols)
 
-            cat = f'cat {vcf_file}+'.csv'
+            cat = f'cat {vcf_file}+".csv"'
             sort = f'sort -k1,1 -k2,2n -V  >> {vcf_file}'
             bgzip = f'bgzip > {vcf_file}.gz'
             tabix = f'tabix -p vcf {vcf_file}.gz'
