@@ -12,7 +12,12 @@ import numpy as np
 from datetime import date
 
 
+
 def report(donor, report_name):
+    report_dir = os.path.dirname(report_name)
+    if not os.path.exists(report_dir):
+        os.makedirs(report_dir)
+        
     keys = donor[0].keys()
     with open(report_name, 'w') as output_file:
         dict_writer = csv.DictWriter(output_file, keys, delimiter="\t")
@@ -42,7 +47,20 @@ def udf(x, y):
         value = x.get(y)
     elif isinstance(x, list):
         value = [udf(a,y) for a in x]
-    return value
+
+    if value: 
+        return value
+    else:
+        return
+
+# def udf(x, y):
+#     if not x:
+#         return
+#     if isinstance(x, dict):
+#         value = x.get(y)
+#     elif isinstance(x, list):
+#         value = [udf(a,y) for a in x]
+#     return value
 
 def get_dict_value(fields, json_obj, field_map):
     tsv_obj = OrderedDict()
@@ -111,7 +129,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
 def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
 
     annotated = []
-    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.*"), recursive=True):
+    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
         annotated.append(os.path.basename(fn))
     
     #annot gnomAD 
@@ -130,27 +148,44 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
     
-    #use bcftools to query the annotated vcf
-    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
-        # basename = os.path.basename(fp)
-        # if re.sub(r'.vcf.gz$', '', basename) + '.query.txt' in annotated: continue
-        bcftools_query(fp, bed_dir)
+    # #use bcftools to query the annotated vcf
+    # for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
+    #     bcftools_query(fp, bed_dir)
 
-    #concatenate the query results for each caller
+    # #concatenate the query results for each caller
+    # for evtype in ['snv', 'indel']:
+    #     filename = '.'.join([annot_dir, evtype, 'all'])
+    #     if os.path.exists(filename):
+    #         os.remove(filename)
+        
+    # for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
+    #     prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
+    #     evtype = os.path.basename(fp).split(".")[7]
+    #     cat = f'cat {fp}'
+    #     awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+    #     sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
+    #     cmd = '|'.join([cat, awk, sed])
+    #     run_cmd(cmd)
+
+def vcf2tsv(vcf_dir):
+    #use bcftools to query the annotated vcf
+    for fp in glob.glob(os.path.join(vcf_dir, "*.vcf.gz"), recursive=True):
+        bcftools_query(fp)
+
     for evtype in ['snv', 'indel']:
-        filename = '.'.join([annot_dir, evtype, 'all'])
+        filename = '.'.join([vcf_dir, evtype, 'all'])
         if os.path.exists(filename):
             os.remove(filename)
-        
-    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
-        prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
-        evtype = os.path.basename(fp).split(".")[7]
+    #concatenate the query results for all donors
+    for fp in glob.glob(os.path.join(vcf_dir, "*.query.txt"), recursive=True):
+        projectId, donorId = os.path.basename(fp).split(".")[0:2]
+        evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
-        sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
+        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        sed = f'sed "s/^/{donorId}/g" >> {vcf_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
-    
+
 
 def bcftools_query(vcf, bed_dir=None):
     basename = os.path.basename(vcf)
@@ -161,6 +196,8 @@ def bcftools_query(vcf, bed_dir=None):
         caller = 'mutect2'
     elif 'validated' in basename:
         caller = 'validated'
+    elif 'union' in basename:
+        caller = 'union'
     else:
         return
 
@@ -189,6 +226,8 @@ def bcftools_query(vcf, bed_dir=None):
         cmd = bcftools + f"-f '[%CHROM\\t%POS\\t%REF\\t%ALT\\t%AF\\t%gnomad_af\\t%gnomad_filter\\n]' -i 'FILTER=\"PASS\" & GT=\"0/1\"' {vcf} > {output_base}.query.txt" 
     elif caller == 'validated':
         cmd = bcftools + f"-f '%CHROM\\t%POS\\t%REF\\t%ALT\\t%Validation_status\\t%Callers\\t%wgsTumourVAF\\t%gnomadAF\\n]' {vcf} > {output_base}.query.txt" 
+    elif caller == 'union':
+        cmd = bcftools + f"-f '%CHROM\\t%POS\\t%REF\\t%ALT\\t%Callers\\t%wgsTumourVAF\\t%gnomadAF\\n]' {vcf} > {output_base}.query.txt"
     else:
         pass
 
@@ -213,7 +252,7 @@ def union_vcf(data_dir, union_dir):
         for do in donor:
             projectId, donorId, sampleId, library_strategy = do.split('.')
             df = None
-            for caller in ['sanger', 'mutect2', 'mutect2-bqsr']:
+            for caller in ['sanger', 'mutect2']:
                 query_file = glob.glob(os.path.join(data_dir, caller+'_annot_vcf', projectId, do+'*'+evtype+'.query.txt'))
                 df_caller = pd.read_table(query_file[0], sep='\t', \
                         names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
@@ -227,27 +266,23 @@ def union_vcf(data_dir, union_dir):
 
             # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
             conditions = [
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].isna(),
-                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].isna(),
-                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].notna(),
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].isna(),
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna() & df_all['AF_mutect2-bqsr'].notna(),
-                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna(),
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna() & df_all['AF_mutect2-bqsr'].notna()
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna(),
+                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna(),
+                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna()
             ]
-            caller_outputs = ['sanger', 'mutect2', 'mu2-bqsr', 'sanger,mutect2', 'sanger,mu2-bqsr', 'mutect2,mu2-bqsr', 'sanger,mutect2,mu2-bqsr']
+            caller_outputs = ['sanger', 'mutect2', 'sanger,mutect2']
             df_all['Callers'] = np.select(conditions, caller_outputs, 'other')
 
-            VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2', 'AF_mutect2-bqsr']].mean(axis=1)
+            VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2']].mean(axis=1)
             df_all['wgsTumourVAF'] = VAF
-            gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2', 'gnomad_af_mutect2-bqsr']].mean(axis=1)
+            gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2']].mean(axis=1)
             df_all['gnomadAF'] = gnomad_af
             # format INFO field
             cols = ['Callers', 'wgsTumourVAF', 'gnomadAF']
             df_all['INFO'] = df[cols].apply(get_info, axis=1)
 
             # generate vcf from dataframe
-            vcf_file = os.path.join(union_dir, '.'.join([do, evtype, 'vcf']))
+            vcf_file = os.path.join(union_dir, '.'.join([do, 'union', 'somatic', evtype, 'vcf']))
             date_str = date.today().strftime("%Y%m%d")
             header = f"""##fileformat=VCFv4.3
 ##fileDate={date_str}
@@ -272,7 +307,7 @@ def union_vcf(data_dir, union_dir):
             run_cmd(cmd)
 
             # generate bed from dataframe
-            bed_file = os.path.join(union_dir, '.'.join([do, evtype, 'bed']))
+            bed_file = os.path.join(union_dir, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
             df_all['START'] = df['POS']
             df_all['END'] = df['POS'] + df['ALT'].str.len()
             cols = ['CHROM', 'START', 'END']
@@ -367,22 +402,30 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         cmd =  cat + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
-def vcf2tsv(validated_dir):
-    #use bcftools to query the annotated vcf
-    for fp in glob.glob(os.path.join(validated_dir, "*.vcf.gz"), recursive=True):
-        bcftools_query(fp)
 
-    for evtype in ['snv', 'indel']:
-        filename = '.'.join([validated_dir, evtype, 'all'])
-        if os.path.exists(filename):
-            os.remove(filename)
-    #concatenate the query results for all donors
-    for fp in glob.glob(os.path.join(validated_dir, "*.query.txt"), recursive=True):
-        projectId, donorId = os.path.basename(fp).split(".")[0:2]
-        evtype = os.path.basename(fp).split(".")[-3]
-        cat = f'cat {fp}'
-        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7,$8}}\''
-        sed = f'sed "s/^/{donorId}/g" >> {validated_dir}.{evtype}.all'
-        cmd = '|'.join([cat, awk, sed])
-        run_cmd(cmd)
 
+def get_extra_metrics(fname, extra_metrics, metrics):
+    if not os.path.isfile(fname): 
+        return metrics
+    collected_sum_fields = {
+        'insert size standard deviation': 'insert_size_sd'
+    }
+    
+    unzip_dir = 'data/qc_metrics/unzip'
+    if os.path.isdir(unzip_dir): 
+        cmd = 'rm -rf %s && mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, unzip_dir, fname)
+    else:
+        cmd = 'mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, fname)
+    run_cmd(cmd)
+
+    for fn in glob.glob(os.path.join(unzip_dir, '*.aln.cram.bamstat')):    
+        with open(fn, 'r') as f:
+            for row in f:
+                if not row.startswith('SN\t'): continue
+                cols = row.replace(':', '').strip().split('\t')
+
+                if not cols[1] in collected_sum_fields: continue
+                metrics.update({
+                    collected_sum_fields[cols[1]]: float(cols[2]) if ('.' in cols[2] or 'e' in cols[2]) else int(cols[2])
+                    })
+        return metrics

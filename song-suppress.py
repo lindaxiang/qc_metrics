@@ -6,6 +6,7 @@ import requests
 import json
 from argparse import ArgumentParser
 import time
+import sys
 
 
 def song_operation(endpoint, operation, token, data=None):
@@ -56,7 +57,7 @@ def main():
         with open(args.analysis_list, 'r') as fp:
             for fline in fp:
                 if fline.startswith('analysisId'): continue
-                analysisId, studyId = fline.split("\t")[0:2]
+                analysisId, studyId = fline.rstrip().split("\t")[0:2]
                 print(analysisId)
                 endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, studyId, analysisId)
                 operation = 'analysis_suppress'
