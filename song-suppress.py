@@ -7,7 +7,8 @@ import json
 from argparse import ArgumentParser
 import time
 import sys
-
+import csv
+import ast
 
 def song_operation(endpoint, operation, token, data=None):
     
@@ -46,9 +47,11 @@ def main():
 
     if args.report:
         with open(args.report, 'r') as fp:
-            for fline in fp:
-                run = json.loads(fline)
-                for a in run.get('run_output_analysis_to_suppress'):
+            reader = csv.DictReader(fp, delimiter='\t')
+            for run in reader:
+                alist = ast.literal_eval(run.get('run_output_analysis_to_suppress')) 
+                for a in alist:
+                    print(a)
                     endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, run.get('studyId'), a)
                     operation = 'analysis_suppress'
                     song_operation(endpoint, operation, args.token)

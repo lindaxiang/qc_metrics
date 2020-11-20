@@ -63,7 +63,7 @@ def main():
 
 
     #download data and annotate
-    for wf in ['sanger', 'mutect2', 'mutect2-bqsr']:
+    for wf in ['sanger', 'mutect2']:
         subfolder = args.mode + '/' + wf
         if not include.get(wf): continue 
         download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)

@@ -178,11 +178,11 @@ def vcf2tsv(vcf_dir):
             os.remove(filename)
     #concatenate the query results for all donors
     for fp in glob.glob(os.path.join(vcf_dir, "*.query.txt"), recursive=True):
-        projectId, donorId = os.path.basename(fp).split(".")[0:2]
+        projectId, donorId, sampleId, experiment = os.path.basename(fp).split(".")[0:5]
         evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
         awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
-        sed = f'sed "s/^/{donorId}/g" >> {vcf_dir}.{evtype}.all'
+        sed = f'sed "s/^/{projectId}\t{donorId}\t{sampleId}\t{experiment}/g" >> {vcf_dir}.{evtype}.all'
         cmd = '|'.join([cat, awk, sed])
         run_cmd(cmd)
 
@@ -246,7 +246,7 @@ def union_vcf(data_dir, union_dir):
     donor = set()
 
     for fn in glob.glob(os.path.join(data_dir, "*_annot_vcf", "*-*", "*.query.txt"), recursive=True):
-        donor.add(os.path.basename(fn).split("2020")[0].rstrip('.'))
+        donor.add(os.path.basename(fn).split(".2020")[0].rstrip('.'))
    
     for evtype in ['snv', 'indel']:
         for do in donor:
@@ -363,7 +363,9 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         os.makedirs(validated_dir)
 
     for fn in glob.glob(os.path.join(union_dir, "*.snv.vcf"), recursive=True):
-        projectId, donorId, sampleId, library_strategy, evtype, fileformat = os.path.basename(fn).split(".")
+        projectId, donorId, sampleId, library_strategy = os.path.basename(fp).split(".")[0:5]
+        evtype, fileformat = os.path.basename(fp).split(".")[-2:]
+
         output_vcf = os.path.join(validated_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]
         tumour_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['tumour'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]

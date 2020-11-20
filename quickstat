@@ -17,6 +17,7 @@ then
 fi
 
 echo "Total $TYPE calls          : " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -cv "^#" )
+echo "Total $TYPE calls(no LOWDEPTH): " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -v "LOWDEPTH" | grep -cv "^#" )
 echo "Total validated $TYPE calls: " $( cat ${VCFDIR}/*.${TYPE}.vcf | grep -c "PASS" )
 echo ""
 for caller in ${callers}

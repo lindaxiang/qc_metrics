@@ -12,7 +12,7 @@ import functools
 import re
 import pandas as pd
 import numpy as np
-from utils import report, run_cmd, get_dict_value, download, annot_vcf
+from utils import report, run_cmd, get_dict_value, download, annot_vcf, get_extra_metrics
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -89,19 +89,24 @@ pcawg_qc_fields = {
     'gender': 'gender',
     'experimental_strategy': 'experimental_strategy',
     'sanger_called': 'flags.sanger_called',
+    'mutect2_called': 'flags.mutect2_called',
     'is_pcawg': 'flags.is_pcawg',
     'normal_sample_id': 'normal.sample_id',
     'tumour_sample_id': 'tumour.sample_id',
     'ARGO_alignment_normal_insert_size_mean': 'normal.alignment.average_insert_size',
+    'ARGO_alignment_normal_read_length_mean': 'normal.alignment.average_length',
     'ARGO_alignment_tumour_insert_size_mean': 'tumour.alignment.average_insert_size',
+    'ARGO_alignment_tumour_read_length_mean': 'tumour.alignment.average_length',
     'ARGO_alignment_normal_insert_size_sd': 'normal.alignment.insert_size_sd',
     'ARGO_alignment_tumour_insert_size_sd': 'tumour.alignment.insert_size_sd',
     'ARGO_alignment_normal_pairs_on_different_chromosomes_rate': 'normal.alignment.pairs_on_different_chromosomes_rate',
     'ARGO_alignment_tumour_pairs_on_different_chromosomes_rate': 'tumour.alignment.pairs_on_different_chromosomes_rate',
     'ARGO_sanger_normal_contamination': 'normal.sanger.contamination.contamination',
     'PCAWG_sanger_normal_contamination': 'pcawg.normal.sanger.contamination.contamination',
+    'ARGO_mutect2_normal_contamination': 'normal.mutect2.contamination.contamination',
     'ARGO_sanger_tumour_contamination': 'tumour.sanger.contamination.contamination',
     'PCAWG_sanger_tumour_contamination': 'pcawg.tumour.sanger.contamination.contamination',
+    'ARGO_mutect2_tumour_contamination': 'tumour.mutect2.contamination.contamination',
     'PCAWG_broad_tumour_contamination': 'pcawg.tumour.broad.contamination',
     'ARGO_sanger_ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
     'PCAWG_sanger_ascat_normal_contamination': 'pcawg.tumour.sanger.ascat_metrics.NormalContamination',
@@ -142,21 +147,21 @@ def add_pcawg_info(variant_calling_stats, pcawg_sample_sheet, pcawg_sanger_qc, p
             for key, value in sanger_qc.items():
                 if not key in pcawg_sample_info: continue
                 if pcawg_sample_info[key] in pcawg_sample_qc: continue
-                pcawg_sample_qc[pcawg_sample_info[key]] = {}
-                pcawg_sample_qc[pcawg_sample_info[key]]['sanger'] = {}
+                pcawg_sample_qc['WGS_'+pcawg_sample_info[key]] = {}
+                pcawg_sample_qc['WGS_'+pcawg_sample_info[key]]['sanger'] = {}
                 value['contamination'][key].pop('by_readgroup')
-                pcawg_sample_qc[pcawg_sample_info[key]]['sanger'].update({'contamination': value['contamination'][key]})
+                pcawg_sample_qc['WGS_'+pcawg_sample_info[key]]['sanger'].update({'contamination': value['contamination'][key]})
                 if 'cnv' in value: 
-                    pcawg_sample_qc[pcawg_sample_info[key]]['sanger'].update({'ascat_metrics': value.get('cnv')})
+                    pcawg_sample_qc['WGS_'+pcawg_sample_info[key]]['sanger'].update({'ascat_metrics': value.get('cnv')})
     
     with open(pcawg_broad_qc, 'r') as fp:
         reader = csv.DictReader(fp, delimiter='\t')
         for row in reader:
             if not row.get('aliquot_GUUID') in pcawg_sample_info: continue
             sample_id = pcawg_sample_info[row.get('aliquot_GUUID')]
-            if not sample_id in pcawg_sample_qc: 
-                pcawg_sample_qc[sample_id] = {}
-            pcawg_sample_qc[sample_id]['broad'] = {
+            if not 'WGS_'+sample_id in pcawg_sample_qc: 
+                pcawg_sample_qc['WGS_'+sample_id] = {}
+            pcawg_sample_qc['WGS_'+sample_id]['broad'] = {
                 'contamination': float(row.get('contamination_percentage_whole_genome_no_array_value'))/100 if row.get('contamination_percentage_whole_genome_no_array_value') else None,
                 'oxoQ': row.get('picard_oxoQ') if row.get('picard_oxoQ') else None,
                 'callable': row.get('somatic_mutation_covered_bases_wgs') if row.get('somatic_mutation_covered_bases_wgs') else None
@@ -169,36 +174,12 @@ def add_pcawg_info(variant_calling_stats, pcawg_sample_sheet, pcawg_sanger_qc, p
         value['pcawg'] = {}
         value['pcawg']['tumour'] = pcawg_sample_qc.get(key)
         if not 'sample_id' in value['normal']: continue
-        if value['normal']['sample_id'] in pcawg_sample_qc:
-            value['pcawg']['normal'] = pcawg_sample_qc.get(value['normal']['sample_id'])
+        if 'WGS_'+value['normal']['sample_id'] in pcawg_sample_qc:
+            value['pcawg']['normal'] = pcawg_sample_qc.get('WGS_'+value['normal']['sample_id'])
         
     return variant_calling_stats
 
-def get_extra_metrics(fname, extra_metrics, metrics):
-    if not os.path.isfile(fname): 
-        return metrics
-    collected_sum_fields = {
-        'insert size standard deviation': 'insert_size_sd'
-    }
-    
-    unzip_dir = 'data/qc_metrics/unzip'
-    if os.path.isdir(unzip_dir): 
-        cmd = 'rm -rf %s && mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, unzip_dir, fname)
-    else:
-        cmd = 'mkdir %s && tar -C %s -xzf %s' % (unzip_dir, unzip_dir, fname)
-    run_cmd(cmd)
 
-    for fn in glob.glob(os.path.join(unzip_dir, '*.aln.cram.bamstat')):    
-        with open(fn, 'r') as f:
-            for row in f:
-                if not row.startswith('SN\t'): continue
-                cols = row.replace(':', '').strip().split('\t')
-
-                if not cols[1] in collected_sum_fields: continue
-                metrics.update({
-                    collected_sum_fields[cols[1]]: float(cols[2]) if ('.' in cols[2] or 'e' in cols[2]) else int(cols[2])
-                    })
-        return metrics
 
 def process_qc_metrics(song_dump, variant_calling_stats):
     sample_map = {}
@@ -207,16 +188,21 @@ def process_qc_metrics(song_dump, variant_calling_stats):
             analysis = json.loads(fline)
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['samples'][0]['specimen']['tumourNormalDesignation'] == 'Tumour': continue
+            studyId = analysis['studyId']
             sampleId = analysis['samples'][0]['sampleId']
             matchedNormal = analysis['samples'][0]['matchedNormalSubmitterSampleId']
-            if not sample_map.get(analysis['studyId']+'::'+matchedNormal): 
-                sample_map[analysis['studyId']+'::'+matchedNormal] = []
-            sample_map[analysis['studyId']+'::'+matchedNormal].append(sampleId)
+            experimental_strategy = analysis['experiment']['experimental_strategy'] if analysis['experiment'].get('experimental_strategy') else analysis['experiment']['library_strategy']
+            normal_sample_id = '_'.join([studyId, experimental_strategy, matchedNormal])
+            if not sample_map.get(normal_sample_id): 
+                sample_map[normal_sample_id] = []
+            sample_map[normal_sample_id].append(experimental_strategy+"_"+sampleId)
+
             donorId = analysis['samples'][0]['donor']['donorId']
             gender = analysis['samples'][0]['donor']['gender']
-            experimental_strategy = analysis['experiment']['experimental_strategy']
-            if not variant_calling_stats.get(sampleId): variant_calling_stats[sampleId] = {
-                'study_id': analysis['studyId'],
+            
+            unique_sampleId = experimental_strategy+"_"+sampleId
+            if not variant_calling_stats.get(unique_sampleId): variant_calling_stats[unique_sampleId] = {
+                'study_id': studyId,
                 'donor_id': donorId,
                 'gender': gender,
                 'experimental_strategy': experimental_strategy,
@@ -224,14 +210,16 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                     'normal_aligned': False,
                     'tumour_aligned': False,
                     'sanger_called': False,
-                    'mutect_called': False
+                    'mutect2_called': False
                 },
                 'normal': {
                     'alignment': {},
                     'sanger': {
                         'contamination': {}
                     },
-                    'mutect2': {}
+                    'mutect2': {
+                        'contamination': {}
+                    }
                 },
                 'tumour': {
                     'sample_id': sampleId,
@@ -241,30 +229,45 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                         'ascat_metrics': {},
                         'genotype_inference': {}
                     },
-                    'mutect2': {}
+                    'mutect2': {
+                        'contamination': {}
+                    }
                 }
             }
 
-            if analysis['analysisType']['name'] == 'variant_calling':
-                variant_calling_stats[sampleId]['flags']['sanger_called'] = True
+            if analysis['analysisType']['name'] == 'variant_calling': 
+                if analysis['workflow']['workflow_short_name'] in ['sanger-wgs', 'sanger-wxs']:
+                    variant_calling_stats[unique_sampleId]['flags']['sanger_called'] = True
+                if analysis['workflow']['workflow_short_name'] == 'gatk-mutect2':
+                    variant_calling_stats[unique_sampleId]['flags']['mutect2_called'] = True
             elif analysis['analysisType']['name'] == 'sequencing_alignment':
-                variant_calling_stats[sampleId]['flags']['tumour_aligned'] = True 
+                variant_calling_stats[unique_sampleId]['flags']['tumour_aligned'] = True 
             elif not analysis['analysisType']['name'] == 'qc_metrics': 
                 continue
 
             for fl in analysis['files']:
                 if fl['dataType'] == 'Cross Sample Contamination':
                     if fl['info']['metrics']['sample_id'] == sampleId:
-                        variant_calling_stats[sampleId]['tumour']['sanger']['contamination'].update(fl['info']['metrics'])
+                        if 'sanger' in fl['fileName']:
+                            variant_calling_stats[unique_sampleId]['tumour']['sanger']['contamination'].update(fl['info']['metrics'])
+                        elif 'gatk-mutect2' in fl['fileName']:
+                            variant_calling_stats[unique_sampleId]['tumour']['mutect2']['contamination'].update(fl['info']['metrics'])
+                        else:
+                            pass
                     else:
-                        variant_calling_stats[sampleId]['normal']['sanger']['contamination'].update(fl['info']['metrics'])
+                        if 'sanger' in fl['fileName']:
+                            variant_calling_stats[unique_sampleId]['normal']['sanger']['contamination'].update(fl['info']['metrics'])
+                        elif 'gatk-mutect2' in fl['fileName']:
+                            variant_calling_stats[unique_sampleId]['normal']['mutect2']['contamination'].update(fl['info']['metrics'])
+                        else:
+                            pass
                 elif fl['dataType'] == 'Ploidy and Purity Estimation':
-                    variant_calling_stats[sampleId]['tumour']['sanger']['ascat_metrics'].update(fl['info']['metrics'])
+                    variant_calling_stats[unique_sampleId]['tumour']['sanger']['ascat_metrics'].update(fl['info']['metrics'])
                 elif fl['dataType'] == 'Genotyping Inferred Gender':
-                    variant_calling_stats[sampleId]['tumour']['sanger']['genotype_inference'].update(fl['info']['metrics']['tumours'][0]['gender'])
+                    variant_calling_stats[unique_sampleId]['tumour']['sanger']['genotype_inference'].update(fl['info']['metrics']['tumours'][0]['gender'])
                 elif fl['dataType'] == 'Alignment QC' and 'qc_metrics' in fl['fileName']:
                     metrics = {}
-                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'pairs_on_different_chromosomes']:
+                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'average_length', 'pairs_on_different_chromosomes']:
                         metrics.update({fn: fl['info']['metrics'][fn]})
                     metrics.update({
                         'duplicate_rate': round(fl['info']['metrics']['duplicated_bases']/(fl['info']['metrics']['total_reads']*fl['info']['metrics']['average_length']), 3)
@@ -278,12 +281,12 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                     fname = os.path.join("data", 'qc_metrics', analysis['studyId'], fl['fileName'])
                     extra_metrics = ['insert_size_sd']
                     metrics = get_extra_metrics(fname, extra_metrics, metrics)
-                    variant_calling_stats[sampleId]['tumour']['alignment'].update(metrics)
+                    variant_calling_stats[unique_sampleId]['tumour']['alignment'].update(metrics)
                 elif fl['dataType'] == 'OxoG Metrics':
-                    variant_calling_stats[sampleId]['tumour']['alignment'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})
+                    variant_calling_stats[unique_sampleId]['tumour']['alignment'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})
                     
                 elif fl['dataType'] == 'Aligned Reads':
-                    variant_calling_stats[sampleId]['tumour']['alignment'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})
+                    variant_calling_stats[unique_sampleId]['tumour']['alignment'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})
 
                 else:
                     continue
@@ -294,14 +297,18 @@ def process_qc_metrics(song_dump, variant_calling_stats):
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] in ['qc_metrics', 'sequencing_alignment']: continue
             if not analysis['samples'][0]['specimen']['tumourNormalDesignation'] == 'Normal': continue
-            normal_sample_id = analysis['studyId']+'::'+analysis['samples'][0]['submitterSampleId']
-            if not normal_sample_id in sample_map: continue
-            experimental_strategy = analysis['experiment']['experimental_strategy']
 
+            experimental_strategy = analysis['experiment']['experimental_strategy'] if analysis['experiment'].get('experimental_strategy') else analysis['experiment']['library_strategy']           
+            studyId = analysis['studyId']
+            submitSampleId = analysis['samples'][0]['submitterSampleId']
+            normal_sample_id = '_'.join([studyId, experimental_strategy, submitSampleId])
+            
+            if not normal_sample_id in sample_map: continue
+            
             for fl in analysis['files']:
-                if fl['dataType'] == 'Alignment QC':
+                if fl['dataType'] == 'Alignment QC' and 'qc_metrics' in fl['fileName']:
                     metrics = {}
-                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'pairs_on_different_chromosomes']:
+                    for fn in ['error_rate', 'properly_paired_reads', 'total_reads', 'average_insert_size', 'average_length', 'pairs_on_different_chromosomes']:
                         metrics.update({fn: fl['info']['metrics'][fn]})
                     metrics.update({
                         'duplicate_rate': round(fl['info']['metrics']['duplicated_bases']/(fl['info']['metrics']['total_reads']*fl['info']['metrics']['average_length']), 3)
@@ -512,7 +519,7 @@ def main():
     variant_calling_stats = {}
 
     #download qc_metrics
-    download(song_dump, 'qc_metrics', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'qc_metrics', args.token, args.metadata_url, args.storage_url)
 
     variant_calling_stats = process_qc_metrics(song_dump, variant_calling_stats)
 
@@ -529,31 +536,32 @@ def main():
     #variant_calling_stats = process_timing_supplement(variant_calling_stats)
     
     # download snv vcf
-    download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'snv', args.token, args.metadata_url, args.storage_url)
 
     # download indel vcf
-    download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
+    #download(song_dump, 'indel', args.token, args.metadata_url, args.storage_url)
 
     # annotate the vcf with gnomad AF
-    data_dir = "data/variant_calling"
-    annot_dir = os.path.join("data", "annot_vcf")
-    annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
+    #data_dir = "data/variant_calling"
+    #annot_dir = os.path.join("data", "annot_vcf")
+    #annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
 
     # process the annot_vcf
-    variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
+    #variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
 
 
     with open('variant_calling_stats.json', 'w') as f:
         f.write(json.dumps(variant_calling_stats, indent=2))
 
     # generate tsv file
+    report_dir = 'report'
     variant_calling_stats_tsv = []
     pcawg_qc_tsv = []
     for d, v in variant_calling_stats.items():
         variant_calling_stats_tsv.append(get_dict_value(None, v, variant_calling_stats_fields))
         pcawg_qc_tsv.append(get_dict_value(None, v, pcawg_qc_fields))
-    report(variant_calling_stats_tsv, 'variant_calling_stats.tsv')
-    report(pcawg_qc_tsv, 'pcawg_qc.tsv')
+    report(variant_calling_stats_tsv, os.path.join(report_dir, 'variant_calling_stats.tsv'))
+    report(pcawg_qc_tsv, os.path.join(report_dir, 'pcawg_qc.tsv'))
 
 
 if __name__ == "__main__":
