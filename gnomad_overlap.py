@@ -24,32 +24,35 @@ def main():
     parser.add_argument("-n", "--cpu_number", dest="cpu_number", type=int, default=4)
     parser.add_argument("-c", "--conf", dest="conf", type=str, default="conf/af_only_gnomad.conf")
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
-    parser.add_argument("-e", "--mode", dest="mode", type=str, default="argo_40donors")
+    parser.add_argument("-e", "--mode", dest="mode", type=str, default="variant_calling")
+    parser.add_argument("-f", "--force", dest="force", action='store_true')
     args = parser.parse_args()
 
     include = {}
-    file_list = glob.glob('/'.join(['include', args.mode, '*'])) 
-    for fl in file_list:    
-        wf_name = os.path.splitext(os.path.basename(fl))[0]
-        with open(fl, 'r') as f:
-            for line in f:
-                if line.startswith('#'): continue
-                if not include.get(wf_name): include[wf_name] = set()
-                include[wf_name].add(line.rstrip())
+    if not args.mode =='variant_calling':
+        file_list = glob.glob('/'.join(['include', args.mode, '*'])) 
+        for fl in file_list:    
+            wf_name = os.path.splitext(os.path.basename(fl))[0]
+            with open(fl, 'r') as f:
+                for line in f:
+                    if line.startswith('#'): continue
+                    if not include.get(wf_name): include[wf_name] = set()
+                    include[wf_name].add(line.rstrip())
+    
 
 
     #download data and annotate
     for wf in ['sanger', 'mutect2']:
         subfolder = args.mode + '/' + wf
-        if not include.get(wf): continue 
-        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
-        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf), subfolder)
+        if include and not include.get(wf): continue 
+        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
 
         # annotate the vcf with gnomad AF, get human readable table
         data_dir = os.path.join("data", subfolder)
         annot_dir = os.path.join("data", subfolder+"_annot_vcf")
         #bed_dir = os.path.join("data", "beds")
-        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir)
+        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, args.force)
 
     # union the result from different callers by donor
     data_dir = os.path.join("data", args.mode)

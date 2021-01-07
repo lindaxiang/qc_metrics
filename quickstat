@@ -7,7 +7,7 @@ TYPE=${TYPE:-$DEFTYPE}
 
 if [ "$TYPE" == "snv" ]
 then
-    callers="sanger mutect2 mu2-bqsr"
+    callers="sanger mutect2"
 elif [ "$TYPE" == "indel" ]
 then
     callers="broad_mutect crg_clindel dkfz novobreak oicr_sga sanger smufin wustl"

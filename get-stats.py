@@ -25,6 +25,7 @@ variant_calling_stats_fields = {
     'normal_aligned': 'flags.normal_aligned',
     'tumour_aligned': 'flags.tumour_aligned',
     'sanger_called': 'flags.sanger_called',
+    'mutect2_called': 'flags.mutect2_called',
     'is_pcawg': 'flags.is_pcawg',
     'normal_sample_id': 'normal.sample_id',
     'normal_file_size_gb': 'normal.alignment.file_size',
@@ -35,7 +36,8 @@ variant_calling_stats_fields = {
     'normal_oxoQ_score': 'normal.alignment.oxoQ_score',
     'normal_avg_depth': 'normal.sanger.contamination.avg_depth',
     'normal_estimated_coverage': 'normal.alignment.estimated_coverage',
-    'normal_contamination': 'normal.sanger.contamination.contamination',
+    'normal_sanger_contamination': 'normal.sanger.contamination.contamination',
+    'normal_mutect2_contamination': 'normal.mutect2.contamination.contamination',
     'normal_properly_paired_reads': 'normal.alignment.properly_paired_reads',
     'normal_total_reads': 'normal.alignment.total_reads',
     'tumour_sample_id': 'tumour.sample_id',
@@ -47,40 +49,43 @@ variant_calling_stats_fields = {
     'tumour_oxoQ_score': 'tumour.alignment.oxoQ_score',
     'tumour_avg_depth': 'tumour.sanger.contamination.avg_depth',
     'tumour_estimated_coverage': 'tumour.alignment.estimated_coverage',
-    'tumour_contamination': 'tumour.sanger.contamination.contamination',
+    'tumour_sanger_contamination': 'tumour.sanger.contamination.contamination',
+    'tumour_mutect2_contamination': 'tumour.mutect2.contamination.contamination',
     'tumour_properly_paired_reads': 'tumour.alignment.properly_paired_reads',
     'tumour_total_reads': 'tumour.alignment.total_reads',
     'ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
     'ascat_ploidy': 'tumour.sanger.ascat_metrics.Ploidy',
-    'ascat_goodnessOfFit': 'tumour.sanger.ascat_metrics.goodnessOfFit',
-    'ascat_psi': 'tumour.sanger.ascat_metrics.psi',
+    # 'ascat_goodnessOfFit': 'tumour.sanger.ascat_metrics.goodnessOfFit',
+    # 'ascat_psi': 'tumour.sanger.ascat_metrics.psi',
     'ascat_purity': 'tumour.sanger.ascat_metrics.rho',
-    'cgpPindel_cpu_hours': 'tumour.sanger.timing.cgpPindel.cpu_hours',
-    'cgpPindel_max_memory_usage_per_core': 'tumour.sanger.timing.cgpPindel.maximum_memory_usage_per_core', 
-    'CaVEMan_cpu_hours': 'tumour.sanger.timing.CaVEMan.cpu_hours',
-    'CaVEMan_max_memory_usage_per_core': 'tumour.sanger.timing.CaVEMan.maximum_memory_usage_per_core',
-    'BRASS_cpu_hours': 'tumour.sanger.timing.BRASS.cpu_hours',
-    'BRASS_max_memory_usage_per_core': 'tumour.sanger.timing.BRASS.maximum_memory_usage_per_core',
-    'ascat_cpu_hours': 'tumour.sanger.timing.ascat.cpu_hours',
-    'ascat_max_memory_usage_per_core': 'tumour.sanger.timing.ascat.maximum_memory_usage_per_core',
-    'snv_somatic_pass_total': 'gnomad_overlap.snv.somatic_pass_total',
-    'indel_somatic_pass_total': 'gnomad_overlap.indel.somatic_pass_total',
-    'gnomad_overlap_snv_t_0': 'gnomad_overlap.snv.t_0',
-    'gnomad_overlap_snv_t_0.001': 'gnomad_overlap.snv.t_0_001',
-    'gnomad_overlap_snv_t_0.01': 'gnomad_overlap.snv.t_0_01',
-    'gnomad_overlap_snv_t_0.1': 'gnomad_overlap.snv.t_0_1',
-    'gnomad_overlap_indel_t_0': 'gnomad_overlap.indel.t_0',
-    'gnomad_overlap_indel_t_0.001': 'gnomad_overlap.indel.t_0_001',
-    'gnomad_overlap_indel_t_0.01': 'gnomad_overlap.indel.t_0_01',
-    'gnomad_overlap_indel_t_0.1': 'gnomad_overlap.indel.t_0_1',
-    'gnomad_overlap_snv_t_0_count': 'gnomad_overlap.snv.t_0_count',
-    'gnomad_overlap_snv_t_0.001_count': 'gnomad_overlap.snv.t_0_001_count',
-    'gnomad_overlap_snv_t_0.01_count': 'gnomad_overlap.snv.t_0_01_count',
-    'gnomad_overlap_snv_t_0.1_count': 'gnomad_overlap.snv.t_0_1_count',
-    'gnomad_overlap_indel_t_0_count': 'gnomad_overlap.indel.t_0_count',
-    'gnomad_overlap_indel_t_0.001_count': 'gnomad_overlap.indel.t_0_001_count',
-    'gnomad_overlap_indel_t_0.01_count': 'gnomad_overlap.indel.t_0_01_count',
-    'gnomad_overlap_indel_t_0.1_count': 'gnomad_overlap.indel.t_0_1_count'
+    'mutect2_callable': 'tumour.mutect2.callable'
+
+    # 'cgpPindel_cpu_hours': 'tumour.sanger.timing.cgpPindel.cpu_hours',
+    # 'cgpPindel_max_memory_usage_per_core': 'tumour.sanger.timing.cgpPindel.maximum_memory_usage_per_core', 
+    # 'CaVEMan_cpu_hours': 'tumour.sanger.timing.CaVEMan.cpu_hours',
+    # 'CaVEMan_max_memory_usage_per_core': 'tumour.sanger.timing.CaVEMan.maximum_memory_usage_per_core',
+    # 'BRASS_cpu_hours': 'tumour.sanger.timing.BRASS.cpu_hours',
+    # 'BRASS_max_memory_usage_per_core': 'tumour.sanger.timing.BRASS.maximum_memory_usage_per_core',
+    # 'ascat_cpu_hours': 'tumour.sanger.timing.ascat.cpu_hours',
+    # 'ascat_max_memory_usage_per_core': 'tumour.sanger.timing.ascat.maximum_memory_usage_per_core',
+    # 'snv_somatic_pass_total': 'gnomad_overlap.snv.somatic_pass_total',
+    # 'indel_somatic_pass_total': 'gnomad_overlap.indel.somatic_pass_total',
+    # 'gnomad_overlap_snv_t_0': 'gnomad_overlap.snv.t_0',
+    # 'gnomad_overlap_snv_t_0.001': 'gnomad_overlap.snv.t_0_001',
+    # 'gnomad_overlap_snv_t_0.01': 'gnomad_overlap.snv.t_0_01',
+    # 'gnomad_overlap_snv_t_0.1': 'gnomad_overlap.snv.t_0_1',
+    # 'gnomad_overlap_indel_t_0': 'gnomad_overlap.indel.t_0',
+    # 'gnomad_overlap_indel_t_0.001': 'gnomad_overlap.indel.t_0_001',
+    # 'gnomad_overlap_indel_t_0.01': 'gnomad_overlap.indel.t_0_01',
+    # 'gnomad_overlap_indel_t_0.1': 'gnomad_overlap.indel.t_0_1',
+    # 'gnomad_overlap_snv_t_0_count': 'gnomad_overlap.snv.t_0_count',
+    # 'gnomad_overlap_snv_t_0.001_count': 'gnomad_overlap.snv.t_0_001_count',
+    # 'gnomad_overlap_snv_t_0.01_count': 'gnomad_overlap.snv.t_0_01_count',
+    # 'gnomad_overlap_snv_t_0.1_count': 'gnomad_overlap.snv.t_0_1_count',
+    # 'gnomad_overlap_indel_t_0_count': 'gnomad_overlap.indel.t_0_count',
+    # 'gnomad_overlap_indel_t_0.001_count': 'gnomad_overlap.indel.t_0_001_count',
+    # 'gnomad_overlap_indel_t_0.01_count': 'gnomad_overlap.indel.t_0_01_count',
+    # 'gnomad_overlap_indel_t_0.1_count': 'gnomad_overlap.indel.t_0_1_count'
 }
 
 pcawg_qc_fields = {
@@ -285,6 +290,9 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                 elif fl['dataType'] == 'OxoG Metrics':
                     variant_calling_stats[unique_sampleId]['tumour']['alignment'].update({'oxoQ_score': fl['info']['metrics']['oxoQ_score']})
                     
+                elif fl['dataType'] == 'Mutect2 Callable Stats':
+                    variant_calling_stats[unique_sampleId]['tumour']['mutect2'].update(fl['info']['metrics'])
+
                 elif fl['dataType'] == 'Aligned Reads':
                     variant_calling_stats[unique_sampleId]['tumour']['alignment'].update({"file_size": round(fl['fileSize']/(1024*1024*1024), 3)})
 
@@ -549,12 +557,13 @@ def main():
     # process the annot_vcf
     #variant_calling_stats = process_annot_vcf(variant_calling_stats, args.af_threshold)
 
-
-    with open('variant_calling_stats.json', 'w') as f:
+    report_dir = 'report'
+    if not os.path.exists(report_dir):
+        os.makedirs(report_dir)
+    with open(os.path.join(report_dir, 'variant_calling_stats.json'), 'w') as f:
         f.write(json.dumps(variant_calling_stats, indent=2))
 
     # generate tsv file
-    report_dir = 'report'
     variant_calling_stats_tsv = []
     pcawg_qc_tsv = []
     for d, v in variant_calling_stats.items():

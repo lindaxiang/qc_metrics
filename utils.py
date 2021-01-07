@@ -126,7 +126,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
                 run_cmd(cmd)
 
 
-def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
+def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
 
     annotated = []
     for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
@@ -135,7 +135,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
     #annot gnomAD 
     for fp in glob.glob(os.path.join(data_dir, "*-*", "*.vcf.gz"), recursive=True):
         basename = os.path.basename(fp)
-        if basename in annotated: continue
+        if basename in annotated and not force: continue
 
         study_id = basename.split('.')[0]
         if not os.path.exists(os.path.join(annot_dir, study_id)):
@@ -148,24 +148,30 @@ def annot_vcf(cores, conf, data_dir, annot_dir, bed_dir=None):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
     
-    # #use bcftools to query the annotated vcf
-    # for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
-    #     bcftools_query(fp, bed_dir)
+    queried = []
+    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
+        annotated.append(os.path.basename(fn))
 
-    # #concatenate the query results for each caller
-    # for evtype in ['snv', 'indel']:
-    #     filename = '.'.join([annot_dir, evtype, 'all'])
-    #     if os.path.exists(filename):
-    #         os.remove(filename)
+    #use bcftools to query the annotated vcf
+    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
+        basename = os.path.basename(fp)
+        if basename in queried and not force: continue
+        bcftools_query(fp, bed_dir)
+
+    #concatenate the query results for each caller
+    for evtype in ['snv', 'indel']:
+        filename = '.'.join([annot_dir, evtype, 'all'])
+        if os.path.exists(filename):
+            os.remove(filename)
         
-    # for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
-    #     prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
-    #     evtype = os.path.basename(fp).split(".")[7]
-    #     cat = f'cat {fp}'
-    #     awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
-    #     sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
-    #     cmd = '|'.join([cat, awk, sed])
-    #     run_cmd(cmd)
+    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
+        prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
+        evtype = os.path.basename(fp).split(".")[7]
+        cat = f'cat {fp}'
+        awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
+        cmd = '|'.join([cat, awk, sed])
+        run_cmd(cmd)
 
 def vcf2tsv(vcf_dir):
     #use bcftools to query the annotated vcf
@@ -178,12 +184,12 @@ def vcf2tsv(vcf_dir):
             os.remove(filename)
     #concatenate the query results for all donors
     for fp in glob.glob(os.path.join(vcf_dir, "*.query.txt"), recursive=True):
-        projectId, donorId, sampleId, experiment = os.path.basename(fp).split(".")[0:5]
+        projectId, donorId, sampleId, experiment = os.path.basename(fp).split(".")[0:4]
         evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
-        awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
-        sed = f'sed "s/^/{projectId}\t{donorId}\t{sampleId}\t{experiment}/g" >> {vcf_dir}.{evtype}.all'
-        cmd = '|'.join([cat, awk, sed])
+        #awk = f'awk \'{{printf "\\t%s\\t%d\\t%s\\t%s\\t%s\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+        sed = f'sed "s/^/{projectId}\t{donorId}\t{sampleId}\t{experiment}\t/g" >> {vcf_dir}.{evtype}.all'
+        cmd = '|'.join([cat, sed])
         run_cmd(cmd)
 
 
@@ -363,8 +369,8 @@ def snv_readcount_annot(union_dir, validated_dir, readcount_dir):
         os.makedirs(validated_dir)
 
     for fn in glob.glob(os.path.join(union_dir, "*.snv.vcf"), recursive=True):
-        projectId, donorId, sampleId, library_strategy = os.path.basename(fp).split(".")[0:5]
-        evtype, fileformat = os.path.basename(fp).split(".")[-2:]
+        projectId, donorId, sampleId = os.path.basename(fn).split(".")[0:3]
+        evtype, fileformat = os.path.basename(fn).split(".")[-2:]
 
         output_vcf = os.path.join(validated_dir, '.'.join([projectId, donorId, 'validated', evtype, fileformat]))
         normal_rc = glob.glob(os.path.join(readcount_dir, '.'.join([projectId, donorId, sample[donorId]['normal'], 'targeted-seq', '*', 'aln.bam.rc'])))[0]

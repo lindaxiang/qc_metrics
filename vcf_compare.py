@@ -49,6 +49,7 @@ def main():
     parser.add_argument("-c", "--conf", dest="conf", type=str, default="conf/af_only_gnomad.conf")
     parser.add_argument("-t", "--token", dest="token", type=str, required=True)
     parser.add_argument("-e", "--mode", dest="mode", type=str, default="validation")
+    parser.add_argument("-f", "--force", dest="force", action='store_true')
     args = parser.parse_args()
 
     include = {}
@@ -73,7 +74,7 @@ def main():
         data_dir = os.path.join("data", subfolder)
         annot_dir = os.path.join("data", subfolder+"_annot_vcf")
         bed_dir = os.path.join("data", "beds")
-        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, bed_dir)
+        annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, args.force, bed_dir)
 
     # union the result from different callers by donor
     data_dir = os.path.join("data", args.mode)

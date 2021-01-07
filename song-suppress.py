@@ -58,11 +58,10 @@ def main():
     
     if args.analysis_list:
         with open(args.analysis_list, 'r') as fp:
-            for fline in fp:
-                if fline.startswith('analysisId'): continue
-                analysisId, studyId = fline.rstrip().split("\t")[0:2]
-                print(analysisId)
-                endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, studyId, analysisId)
+            reader = csv.DictReader(fp, delimiter='\t')
+            for run in reader:
+                print(run.get('analysisId'))
+                endpoint = "%s/studies/%s/analysis/suppress/%s" % (args.song_url, run.get('studyId'), run.get('analysisId'))
                 operation = 'analysis_suppress'
                 song_operation(endpoint, operation, args.token)
     

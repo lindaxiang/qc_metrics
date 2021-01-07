@@ -14,7 +14,7 @@ def download(song_url, file_dump):
     with open(file_dump, 'w') as fp:
         for study in studies:
             if study in ['TEST-CA']: continue
-            analyses = requests.get(song_url + ('/studies/%s/analysis?analysisStates=PUBLISHED,UNPUBLISHED' % (study))).json()
+            analyses = requests.get(song_url + ('/studies/%s/analysis?analysisStates=PUBLISHED' % (study))).json()
             for analysis in analyses:
                 fp.write(json.dumps(analysis)+"\n")
 

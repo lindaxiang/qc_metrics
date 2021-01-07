@@ -27,6 +27,7 @@ def process(gql_dump, analysisType, suppress):
             suppress_dict['donorId'] = analysis['donors'][0]['donorId']
             suppress_dict['sampleId'] = analysis['donors'][0]['specimens'][0]['samples'][0]['sampleId']
             suppress_dict['tumourNormalDesignation'] = analysis['donors'][0]['specimens'][0]['tumourNormalDesignation']
+            suppress_dict['experimental_strategy'] = analysis['experiment']['experimental_strategy']
             suppress_dict['run_input_analysisId'] = analysis.get('analysisId')
             suppress_dict['run_input_analysisType'] = analysis.get('analysisType')
 
@@ -63,6 +64,7 @@ def process(gql_dump, analysisType, suppress):
                     dup = True
                     out_analysis = []
                     for out in run.get('producedAnalyses'):
+                        if not out.get('analysisState') == 'PUBLISHED': continue
                         out_analysis.append(out.get('analysisId'))
                         # keep the run which already being used as input for other workflows
                         if out.get('analysisType') == 'sequencing_alignment' and out.get('inputForRuns'): dup = False
@@ -100,7 +102,8 @@ def main():
 
         # generate tsv file
         report(suppress, os.path.join(report_dir, 'suppress.txt'))
-    
+    else:
+        print("No items to suppress!")
 
 if __name__ == "__main__":
     main()
