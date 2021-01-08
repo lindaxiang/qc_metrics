@@ -72,7 +72,7 @@ def get_dict_value(fields, json_obj, field_map):
         tsv_obj[f] = value
     return tsv_obj 
 
-def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, include=None, subfolder=None):
+def download(song_dump, file_type, workflow, ACCESSTOKEN, METADATA_URL, STORAGE_URL, include=None, subfolder=None):
 
     file_type_map = { # [analysisType, dataType, data_category]
         "qc_metrics": ['qc_metrics', 'Alignment QC', 'Quality Control Metrics'],
@@ -108,6 +108,7 @@ def download(song_dump, file_type, ACCESSTOKEN, METADATA_URL, STORAGE_URL, inclu
             for fl in analysis['files']:
                 if fl['fileName'] in downloaded: continue
                 if not file_type in fl['fileName']: continue
+                if not workflow in fl['fileName']: continue
                 if not fl['dataType'] == file_type_map[file_type][1]: continue
                 if file_type_map[file_type][2] is None and 'data_category' in fl['info']: continue
                 if file_type_map[file_type][2] and not fl['info']['data_category'] == file_type_map[file_type][2]: continue
@@ -150,7 +151,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
     
     queried = []
     for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
-        annotated.append(os.path.basename(fn))
+        queried.append(os.path.basename(fn))
 
     #use bcftools to query the annotated vcf
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):

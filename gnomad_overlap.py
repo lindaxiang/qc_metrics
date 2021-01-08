@@ -45,8 +45,8 @@ def main():
     for wf in ['sanger', 'mutect2']:
         subfolder = args.mode + '/' + wf
         if include and not include.get(wf): continue 
-        download(args.dump_path, 'snv', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
-        download(args.dump_path, 'indel', args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        download(args.dump_path, 'snv', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        download(args.dump_path, 'indel', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
 
         # annotate the vcf with gnomad AF, get human readable table
         data_dir = os.path.join("data", subfolder)
