@@ -48,19 +48,29 @@ def main():
         download(args.dump_path, 'snv', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
         download(args.dump_path, 'indel', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
 
-        # annotate the vcf with gnomad AF, get human readable table
+        # annotate the vcf with gnomad AF
         data_dir = os.path.join("data", subfolder)
-        annot_dir = os.path.join("data", subfolder+"_annot_vcf")
-        #bed_dir = os.path.join("data", "beds")
+        annot_dir = os.path.join("data", subfolder+"_annot")
+        
         annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, args.force)
 
-    # union the result from different callers by donor
-    data_dir = os.path.join("data", args.mode)
-    union_dir = os.path.join("data", args.mode, 'union')
-    union_vcf(data_dir, union_dir)
+        # generate region queried annotated human readable table
+        bed_dir = os.path.join("data", "beds")
+        for region in ['cds', 'exon','gene','intron','start_codon','stop_codon','utr3','utr5']:
+            if region == 'whole':
+                bed_file = None
+            else:
+                bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
+            region_query(annot_dir, region, args.force, bed_file)
 
-    # generate tsv output for easy analysis
-    vcf2tsv(union_dir)
+    for region in ['cds', 'exon','gene','intron','start_codon','stop_codon','utr3','utr5']:
+        # union the result from different callers by donor
+        data_dir = os.path.join("data", args.mode)
+        union_dir = os.path.join("data", args.mode, 'union_'+region)
+        union_vcf(region, data_dir, union_dir)
+
+        # generate tsv output for easy analysis
+        vcf2tsv(union_dir)
 
 
 if __name__ == "__main__":

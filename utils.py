@@ -148,35 +148,42 @@ def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
         tabix = f'tabix -p vcf {vcf}'
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
-    
+
+def region_query(annot_dir, region="whole", force=False, bed_file=None):
+    region_dir = annot_dir+'_'+region    
     queried = []
-    for fn in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
+    for fn in glob.glob(os.path.join(region_dir, "*-*", "*.query.txt"), recursive=True):
         queried.append(os.path.basename(fn))
 
     #use bcftools to query the annotated vcf
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
         basename = os.path.basename(fp)
         if basename in queried and not force: continue
-        bcftools_query(fp, bed_dir)
 
-    #concatenate the query results for each caller
-    for evtype in ['snv', 'indel']:
-        filename = '.'.join([annot_dir, evtype, 'all'])
-        if os.path.exists(filename):
-            os.remove(filename)
+        study_id = basename.split('.')[0]
+        if not os.path.exists(os.path.join(region_dir, study_id)):
+            os.makedirs(os.path.join(region_dir, study_id))
+
+        bcftools_query(fp, region_dir, bed_file)
+
+    # #concatenate the query results for each caller
+    # for evtype in ['snv', 'indel']:
+    #     filename = '.'.join([region_dir, evtype, 'all'])
+    #     if os.path.exists(filename):
+    #         os.remove(filename)
         
-    for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.query.txt"), recursive=True):
-        prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
-        evtype = os.path.basename(fp).split(".")[7]
-        cat = f'cat {fp}'
-        awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
-        sed = f'sed "s/^/{prefix}/g" >> {annot_dir}.{evtype}.all'
-        cmd = '|'.join([cat, awk, sed])
-        run_cmd(cmd)
+    # for fp in glob.glob(os.path.join(region_dir, "*-*", "*.query.txt"), recursive=True):
+    #     prefix = os.path.basename(fp).split("2020")[0].replace(".", "_")
+    #     evtype = os.path.basename(fp).split(".")[7]
+    #     cat = f'cat {fp}'
+    #     awk = f'awk \'{{printf "%s_%s_%s_%s\\t%f\\t%s\\t%s\\n\",$1,$2,$3,$4,$5,$6,$7}}\''
+    #     sed = f'sed "s/^/{prefix}/g" >> {region_dir}.{evtype}.all'
+    #     cmd = '|'.join([cat, awk, sed])
+    #     run_cmd(cmd)
 
 def vcf2tsv(vcf_dir):
     #use bcftools to query the annotated vcf
-    for fp in glob.glob(os.path.join(vcf_dir, "*.vcf.gz"), recursive=True):
+    for fp in glob.glob(os.path.join(vcf_dir, "*-*", "*.vcf.gz"), recursive=True):
         bcftools_query(fp)
 
     for evtype in ['snv', 'indel']:
@@ -184,7 +191,7 @@ def vcf2tsv(vcf_dir):
         if os.path.exists(filename):
             os.remove(filename)
     #concatenate the query results for all donors
-    for fp in glob.glob(os.path.join(vcf_dir, "*.query.txt"), recursive=True):
+    for fp in glob.glob(os.path.join(vcf_dir, "*-*", "*.query.txt"), recursive=True):
         projectId, donorId, sampleId, experiment = os.path.basename(fp).split(".")[0:4]
         evtype = os.path.basename(fp).split(".")[-3]
         cat = f'cat {fp}'
@@ -194,7 +201,7 @@ def vcf2tsv(vcf_dir):
         run_cmd(cmd)
 
 
-def bcftools_query(vcf, bed_dir=None):
+def bcftools_query(vcf, region_dir, bed_file=None):
     basename = os.path.basename(vcf)
     donorId = basename.split('.')[1]
     if 'sanger' in basename:
@@ -209,12 +216,13 @@ def bcftools_query(vcf, bed_dir=None):
         return
 
     evtype = basename.split('.')[-3]
-    output_base = re.sub(r'.vcf.gz$', '', vcf)
+    output_base = os.path.join(region_dir, re.sub(r'.vcf.gz$', '', basename))
     
-    if bed_dir:
+    if bed_file:
         evtype_str = evtype + "_mnv" if evtype == "snv" else evtype
-        bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype_str+'_inflated', 'bed']))    
-        bcftools = f"bcftools query -R {bed_filename} " if os.path.exists(bed_filename) else f"bcftools query "        
+        #bed_filename = os.path.join(bed_dir, '.'.join([donorId, evtype_str+'_inflated', 'bed']))
+            
+        bcftools = f"bcftools query -R {bed_file} " if os.path.exists(bed_file) else f"bcftools query "        
     else:
         bcftools = f"bcftools query "
 
@@ -247,12 +255,12 @@ def get_info(row):
         info.append(col+"="+str(row[col]))
     return ';'.join(info)
 
-def union_vcf(data_dir, union_dir):
+def union_vcf(region, data_dir, union_dir):
     if not os.path.exists(union_dir):
         os.makedirs(union_dir)
     donor = set()
 
-    for fn in glob.glob(os.path.join(data_dir, "*_annot_vcf", "*-*", "*.query.txt"), recursive=True):
+    for fn in glob.glob(os.path.join(data_dir, "*_annot_"+region, "*-*", "*.query.txt"), recursive=True):
         donor.add(os.path.basename(fn).split(".2020")[0].rstrip('.'))
    
     for evtype in ['snv', 'indel']:
@@ -260,7 +268,7 @@ def union_vcf(data_dir, union_dir):
             projectId, donorId, sampleId, library_strategy = do.split('.')
             df = None
             for caller in ['sanger', 'mutect2']:
-                query_file = glob.glob(os.path.join(data_dir, caller+'_annot_vcf', projectId, do+'*'+evtype+'.query.txt'))
+                query_file = glob.glob(os.path.join(data_dir, caller+'_annot_'+region, projectId, do+'*'+evtype+'.query.txt'))
                 df_caller = pd.read_table(query_file[0], sep='\t', \
                         names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
                         dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
@@ -289,7 +297,10 @@ def union_vcf(data_dir, union_dir):
             df_all['INFO'] = df[cols].apply(get_info, axis=1)
 
             # generate vcf from dataframe
-            vcf_file = os.path.join(union_dir, '.'.join([do, 'union', 'somatic', evtype, 'vcf']))
+            if not os.path.exists(os.path.join(union_dir, projectId)):
+                os.makedirs(os.path.join(union_dir, projectId))
+
+            vcf_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'vcf']))
             date_str = date.today().strftime("%Y%m%d")
             header = f"""##fileformat=VCFv4.3
 ##fileDate={date_str}
@@ -314,7 +325,7 @@ def union_vcf(data_dir, union_dir):
             run_cmd(cmd)
 
             # generate bed from dataframe
-            bed_file = os.path.join(union_dir, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
+            bed_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
             df_all['START'] = df['POS']
             df_all['END'] = df['POS'] + df['ALT'].str.len()
             cols = ['CHROM', 'START', 'END']
