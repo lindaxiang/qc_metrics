@@ -203,7 +203,7 @@ def vcf2tsv(vcf_dir):
 
 def bcftools_query(vcf, region_dir, bed_file=None):
     basename = os.path.basename(vcf)
-    donorId = basename.split('.')[1]
+    projectId, donorId = basename.split('.')[0:2]
     if 'sanger' in basename:
         caller = 'sanger' 
     elif 'gatk-mutect2' in basename:
@@ -214,9 +214,9 @@ def bcftools_query(vcf, region_dir, bed_file=None):
         caller = 'union'
     else:
         return
-
+    
     evtype = basename.split('.')[-3]
-    output_base = os.path.join(region_dir, re.sub(r'.vcf.gz$', '', basename))
+    output_base = os.path.join(region_dir, projectId, re.sub(r'.vcf.gz$', '', basename))
     
     if bed_file:
         evtype_str = evtype + "_mnv" if evtype == "snv" else evtype
