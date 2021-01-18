@@ -278,17 +278,19 @@ def union_vcf(region, data_dir, union_dir, force=False):
             for caller in ['sanger', 'mutect2']:
                 query_file = glob.glob(os.path.join(data_dir, caller+'_annot_'+region, projectId, do+'*'+evtype+'.query.txt'))
 
-                if not len(query_file) == 1: 
-                    sys.exit('Donor %s has duplicated or missing query file' % do)
-                df_caller = pd.read_table(query_file[0], sep='\t', \
-                        names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
-                        dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
-                        na_values=".")
-                if df is None:
-                    df = df_caller
+                if len(query_file) > 1: 
+                    sys.exit('Donor %s has duplicated query file' % do)
+                elif len(query_file) == 0: continue
                 else:
-                    df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
-                    df = df_all
+                    df_caller = pd.read_table(query_file[0], sep='\t', \
+                            names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
+                            dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
+                            na_values=".")
+                    if df is None:
+                        df = df_caller
+                    else:
+                        df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
+                        df = df_all
 
             # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
             conditions = [
