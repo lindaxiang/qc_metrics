@@ -149,7 +149,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
-def region_query(annot_dir, region="whole", force=False, bed_file=None):
+def region_query(annot_dir, region, force=False, bed_file=None):
     region_dir = annot_dir+'_'+region    
     queried = []
     for fn in glob.glob(os.path.join(region_dir, "*-*", "*.query.txt"), recursive=True):
@@ -201,8 +201,9 @@ def vcf2tsv(vcf_dir):
         run_cmd(cmd)
 
 
-def bcftools_query(vcf, region_dir, bed_file=None):
+def bcftools_query(vcf, region_dir=None, bed_file=None):
     basename = os.path.basename(vcf)
+    dirname = os.path.dirname(vcf)
     projectId, donorId = basename.split('.')[0:2]
     if 'sanger' in basename:
         caller = 'sanger' 
@@ -216,7 +217,10 @@ def bcftools_query(vcf, region_dir, bed_file=None):
         return
     
     evtype = basename.split('.')[-3]
-    output_base = os.path.join(region_dir, projectId, re.sub(r'.vcf.gz$', '', basename))
+    if region_dir
+        output_base = os.path.join(region_dir, projectId, re.sub(r'.vcf.gz$', '', basename))
+    else:
+        output_base = os.path.join(dirname, re.sub(r'.vcf.gz$', '', basename))
     
     if bed_file:
         #evtype_str = evtype + "_mnv" if evtype == "snv" else evtype
@@ -272,7 +276,7 @@ def union_vcf(region, data_dir, union_dir, force=False):
             projectId, donorId, sampleId, library_strategy = do.split('.')
 
             vcf_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'vcf']))
-            if vcf_file+".gz" in unioned and not force: continue
+            if os.path.basename(vcf_file+".gz") in unioned and not force: continue
 
             df = None
             for caller in ['sanger', 'mutect2']:
