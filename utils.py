@@ -286,9 +286,13 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
         if os.path.basename(vcf_file+".gz") in unioned and not force: continue
 
         df = None
+        skip = False
         for fn in flist:
             caller = get_caller(fn)
             query_file = os.path.join(data_dir, caller+'_annot_'+region, re.sub(r'.vcf.gz$', '.query.txt', fn))
+            if not os.path.exists(query_file):
+                skip = True
+                break
 
             df_caller = pd.read_table(query_file[0], sep='\t', \
                     names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
@@ -300,6 +304,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
                 df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
                 df = df_all
 
+        if skip: continue
         # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
         conditions = [
             df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna(),

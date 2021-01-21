@@ -63,11 +63,11 @@ def main():
             bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
             region_query(annot_dir, region, args.force, bed_file)
 
-    for region in ['cds', 'exon','gene','intron','start_codon','stop_codon','utr3','utr5']:
+    for region in ['cds', 'exon','start_codon','stop_codon','utr3','utr5', 'gene','intron']:
         # union the result from different callers by donor
         data_dir = os.path.join("data", args.mode)
         union_dir = os.path.join("data", args.mode, 'union_'+region)
-        union_vcf(region, data_dir, union_dir)
+        union_vcf(region, data_dir, union_dir, process_flist)
 
         # generate tsv output for easy analysis
         vcf2tsv(union_dir)
