@@ -329,12 +329,12 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
 
         date_str = date.today().strftime("%Y%m%d")
         header = f"""##fileformat=VCFv4.3
-    ##fileDate={date_str}
-    ##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">'
-    ##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">'
-    ##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">'
-    #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
-    """
+##fileDate={date_str}
+##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">'
+##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">'
+##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">'
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+"""
         with open(vcf_file, 'w') as vcf:
             vcf.write(header)
         cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
