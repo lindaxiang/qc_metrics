@@ -274,7 +274,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
 
     donor = {}
     for fn in process_flist:
-        projectId, donorId, sampleId, library_strategy, date_str, workflow_short_name, vType, evtype = fn.split('.')[0:9]
+        projectId, donorId, sampleId, library_strategy, date_str, workflow_short_name, vType, evtype = fn.split('.')[0:8]
         pKey = '.'.join([projectId, donorId, sampleId, library_strategy, evtype])
         if not donor.get(pKey): donor[pKey] = set()
         donor[pKey].add(fn)
