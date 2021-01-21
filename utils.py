@@ -289,7 +289,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
         skip = False
         for fn in flist:
             caller = get_caller(fn)
-            query_file = os.path.join(data_dir, caller+'_annot_'+region, re.sub(r'.vcf.gz$', '.query.txt', fn))
+            query_file = os.path.join(data_dir, caller+'_annot_'+region, projectId, re.sub(r'.vcf.gz$', '.query.txt', fn))
             if not os.path.exists(query_file):
                 skip = True
                 break
