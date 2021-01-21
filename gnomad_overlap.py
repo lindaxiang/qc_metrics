@@ -42,11 +42,14 @@ def main():
 
 
     #download data and annotate
+    process_flist = set() 
     for wf in ['sanger', 'mutect2']:
         subfolder = args.mode + '/' + wf
-        if include and not include.get(wf): continue 
-        download(args.dump_path, 'snv', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
-        download(args.dump_path, 'indel', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        if include and not include.get(wf): continue
+        download_flist = download(args.dump_path, 'snv', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        process_flist.update(download_flist)
+        download_flist = download(args.dump_path, 'indel', wf, args.token, args.metadata_url, args.storage_url, include.get(wf, None), subfolder)
+        process_flist.update(download_flist)
 
         # annotate the vcf with gnomad AF
         data_dir = os.path.join("data", subfolder)

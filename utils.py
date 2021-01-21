@@ -94,11 +94,11 @@ def download(song_dump, file_type, workflow, ACCESSTOKEN, METADATA_URL, STORAGE_
     for fn in glob.glob(os.path.join(data_dir, "*-*", "*.*"), recursive=True):
         downloaded.append(os.path.basename(fn))
 
+    download_flist = set()
     with open(song_dump, 'r') as fp:
         for fline in fp:
             analysis = json.loads(fline)
             if include and not analysis['analysisId'] in include: continue
-            if analysis.get('analysisId') in ['fa2cc829-c646-4719-acc8-29c6465719e4']: continue
             if not analysis.get('analysisState') == 'PUBLISHED': continue
             if not analysis['analysisType']['name'] == file_type_map[file_type][0]: continue
             output_dir = os.path.join(data_dir, analysis['studyId'])
@@ -106,13 +106,13 @@ def download(song_dump, file_type, workflow, ACCESSTOKEN, METADATA_URL, STORAGE_
                 os.makedirs(output_dir)
 
             for fl in analysis['files']:
-                if fl['fileName'] in downloaded: continue
                 if not file_type in fl['fileName']: continue
                 if not workflow in fl['fileName']: continue
                 if not fl['dataType'] == file_type_map[file_type][1]: continue
                 if file_type_map[file_type][2] is None and 'data_category' in fl['info']: continue
                 if file_type_map[file_type][2] and not fl['info']['data_category'] == file_type_map[file_type][2]: continue
-                
+                download_flist.add(fl['fileName'])
+                if fl['fileName'] in downloaded: continue
 
                 cmd = 'export ACCESSTOKEN=%s && export METADATA_URL=%s \
                     && export STORAGE_URL=%s && export TRANSPORT_PARALLEL=3 \
@@ -125,7 +125,7 @@ def download(song_dump, file_type, workflow, ACCESSTOKEN, METADATA_URL, STORAGE_
                     % (ACCESSTOKEN, METADATA_URL, STORAGE_URL, fl['studyId'], fl['objectId'], output_dir)
 
                 run_cmd(cmd)
-
+    return download_flist
 
 def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
 
@@ -200,11 +200,7 @@ def vcf2tsv(vcf_dir):
         cmd = '|'.join([cat, sed])
         run_cmd(cmd)
 
-
-def bcftools_query(vcf, region_dir=None, bed_file=None):
-    basename = os.path.basename(vcf)
-    dirname = os.path.dirname(vcf)
-    projectId, donorId = basename.split('.')[0:2]
+def get_caller(basename):
     if 'sanger' in basename:
         caller = 'sanger' 
     elif 'gatk-mutect2' in basename:
@@ -214,10 +210,19 @@ def bcftools_query(vcf, region_dir=None, bed_file=None):
     elif 'union' in basename:
         caller = 'union'
     else:
-        return
+        caller = None
+    return caller
+
+
+def bcftools_query(vcf, region_dir=None, bed_file=None):
+    basename = os.path.basename(vcf)
+    dirname = os.path.dirname(vcf)
+    projectId, donorId = basename.split('.')[0:2]
+    caller = get_caller(basename)
+    if not caller: return
     
     evtype = basename.split('.')[-3]
-    if region_dir
+    if region_dir:
         output_base = os.path.join(region_dir, projectId, re.sub(r'.vcf.gz$', '', basename))
     else:
         output_base = os.path.join(dirname, re.sub(r'.vcf.gz$', '', basename))
@@ -259,7 +264,7 @@ def get_info(row):
         info.append(col+"="+str(row[col]))
     return ';'.join(info)
 
-def union_vcf(region, data_dir, union_dir, force=False):
+def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=False):
     if not os.path.exists(union_dir):
         os.makedirs(union_dir)
     
@@ -267,90 +272,89 @@ def union_vcf(region, data_dir, union_dir, force=False):
     for fn in glob.glob(os.path.join(union_dir, "*-*", "*.vcf.gz"), recursive=True):
         unioned.append(os.path.basename(fn))
 
-    donor = set()
-    for fn in glob.glob(os.path.join(data_dir, "*_annot_"+region, "*-*", "*.query.txt"), recursive=True):
-        donor.add(os.path.basename(fn).split(".20")[0].rstrip('.'))
+    donor = {}
+    for fn in process_flist:
+        projectId, donorId, sampleId, library_strategy, date_str, workflow_short_name, vType, evtype = fn.split('.')[0:11]
+        pKey = '.'.join([projectId, donorId, sampleId, library_strategy, evtype])
+        if not donor.get(pKey): donor[pKey] = set()
+        donor[pKey].add(fn)
    
-    for evtype in ['snv', 'indel']:
-        for do in donor:
-            projectId, donorId, sampleId, library_strategy = do.split('.')
+    for do, flist in donor.items():
+        projectId, donorId, sampleId, library_strategy, evtype = do.split('.')
+        if not len(flist) == nCallers: continue          
+        vcf_file = os.path.join(union_dir, projectId, '.'.join([projectId, donorId, sampleId, library_strategy, 'union', 'somatic', evtype, 'vcf']))
+        if os.path.basename(vcf_file+".gz") in unioned and not force: continue
 
-            vcf_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'vcf']))
-            if os.path.basename(vcf_file+".gz") in unioned and not force: continue
+        df = None
+        for fn in flist:
+            caller = get_caller(fn)
+            query_file = os.path.join(data_dir, caller+'_annot_'+region, re.sub(r'.vcf.gz$', '.query.txt', fn))
 
-            df = None
-            for caller in ['sanger', 'mutect2']:
-                query_file = glob.glob(os.path.join(data_dir, caller+'_annot_'+region, projectId, do+'*'+evtype+'.query.txt'))
+            df_caller = pd.read_table(query_file[0], sep='\t', \
+                    names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
+                    dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
+                    na_values=".")
+            if df is None:
+                df = df_caller
+            else:
+                df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
+                df = df_all
 
-                if len(query_file) > 1: 
-                    sys.exit('Donor %s has duplicated query file' % do)
-                elif len(query_file) == 0: continue
-                else:
-                    df_caller = pd.read_table(query_file[0], sep='\t', \
-                            names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
-                            dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
-                            na_values=".")
-                    if df is None:
-                        df = df_caller
-                    else:
-                        df_all = df.join(df_caller.set_index(['CHROM', 'POS', 'REF', 'ALT']), on=['CHROM', 'POS', 'REF', 'ALT'], how='outer')
-                        df = df_all
+        # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
+        conditions = [
+            df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna(),
+            df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna(),
+            df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna()
+        ]
+        caller_outputs = ['sanger', 'mutect2', 'sanger,mutect2']
+        df_all['Callers'] = np.select(conditions, caller_outputs, 'other')
 
-            # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
-            conditions = [
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna(),
-                df_all['AF_sanger'].isna() & df_all['AF_mutect2'].notna(),
-                df_all['AF_sanger'].notna() & df_all['AF_mutect2'].notna()
-            ]
-            caller_outputs = ['sanger', 'mutect2', 'sanger,mutect2']
-            df_all['Callers'] = np.select(conditions, caller_outputs, 'other')
+        VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2']].mean(axis=1)
+        df_all['wgsTumourVAF'] = VAF
+        gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2']].mean(axis=1)
+        df_all['gnomadAF'] = gnomad_af
+        # format INFO field
+        cols = ['Callers', 'wgsTumourVAF', 'gnomadAF']
+        df_all['INFO'] = df[cols].apply(get_info, axis=1)
 
-            VAF = df_all.loc[:, ['AF_sanger', 'AF_mutect2']].mean(axis=1)
-            df_all['wgsTumourVAF'] = VAF
-            gnomad_af = df_all.loc[:, ['gnomad_af_sanger', 'gnomad_af_mutect2']].mean(axis=1)
-            df_all['gnomadAF'] = gnomad_af
-            # format INFO field
-            cols = ['Callers', 'wgsTumourVAF', 'gnomadAF']
-            df_all['INFO'] = df[cols].apply(get_info, axis=1)
+        # generate vcf from dataframe
+        if not os.path.exists(os.path.join(union_dir, projectId)):
+            os.makedirs(os.path.join(union_dir, projectId))
 
-            # generate vcf from dataframe
-            if not os.path.exists(os.path.join(union_dir, projectId)):
-                os.makedirs(os.path.join(union_dir, projectId))
+        date_str = date.today().strftime("%Y%m%d")
+        header = f"""##fileformat=VCFv4.3
+    ##fileDate={date_str}
+    ##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">'
+    ##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">'
+    ##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">'
+    #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
+    """
+        with open(vcf_file, 'w') as vcf:
+            vcf.write(header)
+        cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+        df_all['ID'] = ""
+        df_all['QUAL'] = ""
+        df_all['FILTER'] = ""
+        df_all.to_csv(vcf_file+'.csv', index=False, header=False, sep="\t", columns=cols)
 
-            date_str = date.today().strftime("%Y%m%d")
-            header = f"""##fileformat=VCFv4.3
-##fileDate={date_str}
-##INFO=<ID=Callers,Number=.,Type=String,Description="Callers that made this call">'
-##INFO=<ID=gnomadAF,Number=A,Type=Float,Description="gnomAD Allele Frequency">'
-##INFO=<ID=wgsTumourVAF,Number=A,Type=Float,Description="Allele fractions of alternate alleles in the WGS Tumour">'
-#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO
-"""
-            with open(vcf_file, 'w') as vcf:
-                vcf.write(header)
-            cols = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
-            df_all['ID'] = ""
-            df_all['QUAL'] = ""
-            df_all['FILTER'] = ""
-            df_all.to_csv(vcf_file+'.csv', index=False, header=False, sep="\t", columns=cols)
+        sort = f'sort -k1,1 -k2,2n -V {vcf_file}.csv >> {vcf_file}'
+        cat = f'cat {vcf_file}'
+        bgzip = f'bgzip > {vcf_file}.gz'
+        tabix = f'tabix -p vcf {vcf_file}.gz'
+        cmd =  sort + "&&" + cat + ' | ' + bgzip + ' && ' + tabix
+        run_cmd(cmd)
 
-            sort = f'sort -k1,1 -k2,2n -V {vcf_file}.csv >> {vcf_file}'
-            cat = f'cat {vcf_file}'
-            bgzip = f'bgzip > {vcf_file}.gz'
-            tabix = f'tabix -p vcf {vcf_file}.gz'
-            cmd =  sort + "&&" + cat + ' | ' + bgzip + ' && ' + tabix
-            run_cmd(cmd)
-
-            # generate bed from dataframe
-            bed_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
-            df_all['START'] = df['POS']
-            df_all['END'] = df['POS'] + df['ALT'].str.len()
-            cols = ['CHROM', 'START', 'END']
-            df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
-            
-            sort = f'sort -k1,1 -k2,2n -V {bed_file}.csv > {bed_file}'
-            rm = f'rm {bed_file}.csv'
-            cmd = sort + "&&" + rm
-            run_cmd(cmd)
+        # generate bed from dataframe
+        bed_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
+        df_all['START'] = df['POS']
+        df_all['END'] = df['POS'] + df['ALT'].str.len()
+        cols = ['CHROM', 'START', 'END']
+        df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
+        
+        sort = f'sort -k1,1 -k2,2n -V {bed_file}.csv > {bed_file}'
+        rm = f'rm {bed_file}.csv'
+        cmd = sort + "&&" + rm
+        run_cmd(cmd)
 
 
 def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
