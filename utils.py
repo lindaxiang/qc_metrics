@@ -305,6 +305,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
                 df = df_all
 
         if skip: continue
+        if df.empty: continue
         # add columns: caller, VAF, VAF_level, gnomad_af, gnomad_af_level
         conditions = [
             df_all['AF_sanger'].notna() & df_all['AF_mutect2'].isna(),
