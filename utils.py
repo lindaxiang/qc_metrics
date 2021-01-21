@@ -294,7 +294,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
                 skip = True
                 break
 
-            df_caller = pd.read_table(query_file[0], sep='\t', \
+            df_caller = pd.read_table(query_file, sep='\t', \
                     names=["CHROM", "POS", "REF", "ALT", "AF_"+caller, "gnomad_af_"+caller, "gnomad_filter_"+caller], \
                     dtype={"CHROM": str, "POS": int, "REF": str, "ALT": str, "AF_"+caller: float, "gnomad_af_"+caller: float, "gnomad_filter_"+caller: str}, \
                     na_values=".")
