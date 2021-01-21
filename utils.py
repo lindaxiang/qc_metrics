@@ -153,14 +153,14 @@ def region_query(annot_dir, region, force=False, bed_file=None):
     region_dir = annot_dir+'_'+region    
     queried = []
     for fn in glob.glob(os.path.join(region_dir, "*-*", "*.query.txt"), recursive=True):
-        queried.append(os.path.basename(fn))
+        queried.append(re.sub(r'.query.txt', '', os.path.basename(fn)))
 
     #use bcftools to query the annotated vcf
     for fp in glob.glob(os.path.join(annot_dir, "*-*", "*.vcf.gz"), recursive=True):
-        basename = os.path.basename(fp)
-        if basename in queried and not force: continue
+        queryname = re.sub(r'.vcf.gz$', '', os.path.basename(fp))
+        if queryname in queried and not force: continue
 
-        study_id = basename.split('.')[0]
+        study_id = queryname.split('.')[0]
         if not os.path.exists(os.path.join(region_dir, study_id)):
             os.makedirs(os.path.join(region_dir, study_id))
 
