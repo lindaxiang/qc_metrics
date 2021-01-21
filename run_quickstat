@@ -1,0 +1,23 @@
+#!/bin/bash
+
+DEFVCFDIR=data/variant_calling
+DEFTYPE=snv
+VCFDIR=${VCFDIR:-$DEFVCFDIR}
+TYPE=${TYPE:-$DEFTYPE}
+
+for TYPE in snv indel
+do
+    for exp in wgs wxs
+    do
+        for region in cds exon start_codon stop_codon utr3 utr5 gene intron
+        do
+            echo "Total $TYPE calls of $exp data in ${region}: " $( cat ${VCFDIR}/union_${region}.${TYPE}.all | grep -c ${exp} )
+            echo ""
+            private=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all |awk '{print $9}'|sort|uniq -c|awk '{print $1}'|tr '\n' '\t')
+            gnomad=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'|awk '{print $9}'|sort|uniq -c|awk '{print $1}'|tr '\n' '\t')
+            gnomad_all=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'| wc -l)
+            echo "$region		$private/$gnomad	$gnomad_all"
+            echo ""
+        done
+    done
+done
