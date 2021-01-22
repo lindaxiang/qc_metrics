@@ -59,11 +59,11 @@ def main():
 
         # generate region queried annotated human readable table
         bed_dir = os.path.join("data", "beds")
-        for region in ['cds', 'exon','gene','intron','start_codon','stop_codon','utr3','utr5']:
+        for region in ['cds', 'exon', 'promoter', 'start_codon','stop_codon','utr3','utr5','gene','intron']:
             bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
             region_query(annot_dir, region, args.force, bed_file)
 
-    for region in ['cds', 'exon','start_codon','stop_codon','utr3','utr5', 'gene','intron']:
+    for region in ['cds', 'exon','promoter', 'start_codon','stop_codon','utr3','utr5', 'gene','intron']:
         # union the result from different callers by donor
         data_dir = os.path.join("data", args.mode)
         union_dir = os.path.join("data", args.mode, 'union_'+region)
