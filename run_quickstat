@@ -9,15 +9,17 @@ for TYPE in snv indel
 do
     for exp in wgs wxs
     do
-        echo "Total donors with $exp $TYPE data: " $( cat ${VCFDIR}/union_${region}.${TYPE}.all | grep ${exp} | awk '{print $2}'|sort -u|wc -l )
+        echo "---------------------------------------------------------------------------"
+        echo "Total donors with $exp $TYPE data: " $( grep ${exp} ${VCFDIR}/union_*.${TYPE}.all | awk '{print $2}'|sort -u|wc -l )
         for region in cds exon start_codon stop_codon utr3 utr5 gene intron
         do
             declare -A private gnomad
             echo "Total $TYPE calls of $exp data in ${region}: " $( cat ${VCFDIR}/union_${region}.${TYPE}.all | grep -c ${exp} )
             
             for caller in sanger mutect2 sanger,mutect2
-                private[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk -v awkvar="$caller" '$9==awkvar'|wc -l)
-                gnomad[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'|awk -v awkvar="$caller" '$9==awkvar'|wc -l)
+            do
+            private[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk -v awkvar="$caller" '$9==awkvar'|wc -l)
+            gnomad[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'|awk -v awkvar="$caller" '$9==awkvar'|wc -l)
             done 
             gnomad_all=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'| wc -l)
             echo "$region		${private[sanger]}/${gnomad[sanger]}		${private[mutect2]}/${gnomad[mutect2]}		${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}	$gnomad_all"
