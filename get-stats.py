@@ -19,46 +19,50 @@ pd.options.mode.chained_assignment = None  # default='warn'
 variant_calling_stats_fields = {
     'donor_id': 'donor_id',
     'study_id': 'study_id',
-    'gender': 'gender',
+    # 'gender': 'gender',
     'experimental_strategy': 'experimental_strategy',
-    'geno_infer_gender': 'geno_infer_gender',
-    'normal_aligned': 'flags.normal_aligned',
-    'tumour_aligned': 'flags.tumour_aligned',
-    'sanger_called': 'flags.sanger_called',
-    'mutect2_called': 'flags.mutect2_called',
-    'is_pcawg': 'flags.is_pcawg',
+    # 'geno_infer_gender': 'geno_infer_gender',
+    # 'normal_aligned': 'flags.normal_aligned',
+    # 'tumour_aligned': 'flags.tumour_aligned',
+    # 'sanger_called': 'flags.sanger_called',
+    # 'mutect2_called': 'flags.mutect2_called',
+    # 'is_pcawg': 'flags.is_pcawg',
     'normal_sample_id': 'normal.sample_id',
-    'normal_file_size_gb': 'normal.alignment.file_size',
-    'normal_error_rate': 'normal.alignment.error_rate',
-    'normal_duplicate_rate': 'normal.alignment.duplicate_rate',
-    'normal_pairs_on_different_chromosomes': 'normal.alignment.pairs_on_different_chromosomes',
-    'normal_pairs_on_different_chromosomes_rate': 'normal.alignment.pairs_on_different_chromosomes_rate',
+    'normal_submitter_sample_id': 'normal.submitterSampleId',
+    # 'normal_file_size_gb': 'normal.alignment.file_size',
+    # 'normal_error_rate': 'normal.alignment.error_rate',
+    # 'normal_duplicate_rate': 'normal.alignment.duplicate_rate',
+    # 'normal_pairs_on_different_chromosomes': 'normal.alignment.pairs_on_different_chromosomes',
+    # 'normal_pairs_on_different_chromosomes_rate': 'normal.alignment.pairs_on_different_chromosomes_rate',
     'normal_oxoQ_score': 'normal.alignment.oxoQ_score',
-    'normal_avg_depth': 'normal.sanger.contamination.avg_depth',
-    'normal_estimated_coverage': 'normal.alignment.estimated_coverage',
-    'normal_sanger_contamination': 'normal.sanger.contamination.contamination',
-    'normal_mutect2_contamination': 'normal.mutect2.contamination.contamination',
-    'normal_properly_paired_reads': 'normal.alignment.properly_paired_reads',
-    'normal_total_reads': 'normal.alignment.total_reads',
+    'normal_insert_size_mean': 'normal.alignment.average_insert_size',
+    # 'normal_avg_depth': 'normal.sanger.contamination.avg_depth',
+    # 'normal_estimated_coverage': 'normal.alignment.estimated_coverage',
+    # 'normal_sanger_contamination': 'normal.sanger.contamination.contamination',
+    # 'normal_mutect2_contamination': 'normal.mutect2.contamination.contamination',
+    # 'normal_properly_paired_reads': 'normal.alignment.properly_paired_reads',
+    # 'normal_total_reads': 'normal.alignment.total_reads',
     'tumour_sample_id': 'tumour.sample_id',
-    'tumour_file_size_gb': 'tumour.alignment.file_size',
-    'tumour_error_rate': 'tumour.alignment.error_rate',
-    'tumour_duplicate_rate': 'tumour.alignment.duplicate_rate',
-    'tumour_pairs_on_different_chromosomes': 'tumour.alignment.pairs_on_different_chromosomes',
-    'tumour_pairs_on_different_chromosomes_rate': 'tumour.alignment.pairs_on_different_chromosomes_rate',
+    'tumour_submitter_sample_id': 'tumour.submitterSampleId',
+    # 'tumour_file_size_gb': 'tumour.alignment.file_size',
+    # 'tumour_error_rate': 'tumour.alignment.error_rate',
+    # 'tumour_duplicate_rate': 'tumour.alignment.duplicate_rate',
+    # 'tumour_pairs_on_different_chromosomes': 'tumour.alignment.pairs_on_different_chromosomes',
+    # 'tumour_pairs_on_different_chromosomes_rate': 'tumour.alignment.pairs_on_different_chromosomes_rate',
     'tumour_oxoQ_score': 'tumour.alignment.oxoQ_score',
-    'tumour_avg_depth': 'tumour.sanger.contamination.avg_depth',
-    'tumour_estimated_coverage': 'tumour.alignment.estimated_coverage',
-    'tumour_sanger_contamination': 'tumour.sanger.contamination.contamination',
-    'tumour_mutect2_contamination': 'tumour.mutect2.contamination.contamination',
-    'tumour_properly_paired_reads': 'tumour.alignment.properly_paired_reads',
-    'tumour_total_reads': 'tumour.alignment.total_reads',
-    'ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
-    'ascat_ploidy': 'tumour.sanger.ascat_metrics.Ploidy',
+    'tumour_insert_size_mean': 'tumour.alignment.average_insert_size'
+    # 'tumour_avg_depth': 'tumour.sanger.contamination.avg_depth',
+    # 'tumour_estimated_coverage': 'tumour.alignment.estimated_coverage',
+    # 'tumour_sanger_contamination': 'tumour.sanger.contamination.contamination',
+    # 'tumour_mutect2_contamination': 'tumour.mutect2.contamination.contamination',
+    # 'tumour_properly_paired_reads': 'tumour.alignment.properly_paired_reads',
+    # 'tumour_total_reads': 'tumour.alignment.total_reads',
+    # 'ascat_normal_contamination': 'tumour.sanger.ascat_metrics.NormalContamination',
+    # 'ascat_ploidy': 'tumour.sanger.ascat_metrics.Ploidy',
     # 'ascat_goodnessOfFit': 'tumour.sanger.ascat_metrics.goodnessOfFit',
     # 'ascat_psi': 'tumour.sanger.ascat_metrics.psi',
-    'ascat_purity': 'tumour.sanger.ascat_metrics.rho',
-    'mutect2_callable': 'tumour.mutect2.callable'
+    # 'ascat_purity': 'tumour.sanger.ascat_metrics.rho',
+    # 'mutect2_callable': 'tumour.mutect2.callable'
 
     # 'cgpPindel_cpu_hours': 'tumour.sanger.timing.cgpPindel.cpu_hours',
     # 'cgpPindel_max_memory_usage_per_core': 'tumour.sanger.timing.cgpPindel.maximum_memory_usage_per_core', 
@@ -195,6 +199,7 @@ def process_qc_metrics(song_dump, variant_calling_stats):
             if not analysis['samples'][0]['specimen']['tumourNormalDesignation'] == 'Tumour': continue
             studyId = analysis['studyId']
             sampleId = analysis['samples'][0]['sampleId']
+            submitterSampleId = analysis['samples'][0]['submitterSampleId']
             matchedNormal = analysis['samples'][0]['matchedNormalSubmitterSampleId']
             experimental_strategy = analysis['experiment']['experimental_strategy'] if analysis['experiment'].get('experimental_strategy') else analysis['experiment']['library_strategy']
             normal_sample_id = '_'.join([studyId, experimental_strategy, matchedNormal])
@@ -228,6 +233,7 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                 },
                 'tumour': {
                     'sample_id': sampleId,
+                    'submitterSampleId': submitterSampleId,
                     'alignment': {},
                     'sanger': {
                         'contamination': {},
@@ -332,7 +338,8 @@ def process_qc_metrics(song_dump, variant_calling_stats):
                     metrics = get_extra_metrics(fname, extra_metrics, metrics)
 
                     for sa in sample_map[normal_sample_id]:
-                        variant_calling_stats[sa]['normal']['sample_id'] = analysis['samples'][0]['sampleId']  
+                        variant_calling_stats[sa]['normal']['sample_id'] = analysis['samples'][0]['sampleId']
+                        variant_calling_stats[sa]['normal']['submitterSampleId'] = analysis['samples'][0]['submitterSampleId']  
                         variant_calling_stats[sa]['normal']['alignment'].update(metrics)
                         variant_calling_stats[sa]['flags']['normal_aligned'] = True 
                 elif fl['dataType'] == 'OxoG Metrics':

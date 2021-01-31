@@ -27,9 +27,11 @@ def process(gql_dump, analysisType, suppress):
             suppress_dict['donorId'] = analysis['donors'][0]['donorId']
             suppress_dict['sampleId'] = analysis['donors'][0]['specimens'][0]['samples'][0]['sampleId']
             suppress_dict['tumourNormalDesignation'] = analysis['donors'][0]['specimens'][0]['tumourNormalDesignation']
-            suppress_dict['experimental_strategy'] = analysis['experiment']['experimental_strategy']
+            suppress_dict['experimental_strategy'] = analysis['experiment']['experimental_strategy'] if analysis['experiment'].get('experimental_strategy') else analysis['experiment']['library_strategy']
             suppress_dict['run_input_analysisId'] = analysis.get('analysisId')
             suppress_dict['run_input_analysisType'] = analysis.get('analysisType')
+
+            if suppress_dict['tumourNormalDesignation'] == 'Normal' and suppress_dict['run_input_analysisType'] == 'sequencing_alignment': continue
 
             for wf in wf_repo:
                 complete_count = 0
