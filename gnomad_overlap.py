@@ -59,11 +59,11 @@ def main():
 
         # generate region queried annotated human readable table
         bed_dir = os.path.join("data", "beds")
-        for region in ['cds', 'exon', 'promoter', 'start_codon','stop_codon','utr3','utr5','gene','intron']:
+        for region in ['cds', 'exon', 'protein_coding.promoter', 'protein_coding_ss', 'utr3', 'utr5', 'lncRNA', 'lncRNA.promoter', 'lncRNA_ss', 'miRNA', 'miRNA.promoter']:
             bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
             region_query(annot_dir, region, args.force, bed_file)
 
-    for region in ['cds', 'exon','promoter', 'start_codon','stop_codon','utr3','utr5', 'gene','intron']:
+    for region in ['cds', 'exon', 'protein_coding.promoter', 'protein_coding_ss', 'utr3', 'utr5', 'lncRNA', 'lncRNA.promoter', 'lncRNA_ss', 'miRNA', 'miRNA.promoter']:
         # union the result from different callers by donor
         data_dir = os.path.join("data", args.mode)
         union_dir = os.path.join("data", args.mode, 'union_'+region)
