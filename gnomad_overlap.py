@@ -57,18 +57,18 @@ def main():
         
         annot_vcf(args.cpu_number, args.conf, data_dir, annot_dir, args.force)
 
-        # generate region queried annotated human readable table
-        bed_dir = os.path.join("data", "beds")
-        for region in ['cds', 'exon', 'protein_coding.promoter', 'protein_coding_ss', 'utr3', 'utr5', 'lncRNA', 'lncRNA.promoter', 'lncRNA_ss', 'miRNA', 'miRNA.promoter']:
-            bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
-            region_query(annot_dir, region, args.force, bed_file)
+        region_query(annot_dir)
+    
+    # union the result from different callers by donor
+    data_dir = os.path.join("data", args.mode)
+    union_dir = os.path.join("data", args.mode, 'union')
+    union_vcf(data_dir, union_dir, process_flist)
+    vcf2tsv(union_dir)
 
+    bed_dir = os.path.join("data", "beds")
     for region in ['cds', 'exon', 'protein_coding.promoter', 'protein_coding_ss', 'utr3', 'utr5', 'lncRNA', 'lncRNA.promoter', 'lncRNA_ss', 'miRNA', 'miRNA.promoter']:
-        # union the result from different callers by donor
-        data_dir = os.path.join("data", args.mode)
-        union_dir = os.path.join("data", args.mode, 'union_'+region)
-        union_vcf(region, data_dir, union_dir, process_flist)
-
+        bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
+        region_query(union_dir, region, args.force, bed_file)
         # generate tsv output for easy analysis
         vcf2tsv(union_dir)
 

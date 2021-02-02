@@ -67,7 +67,7 @@ def get_dict_value(fields, json_obj, field_map):
     if fields is None: fields = field_map.keys()
     for f in fields:
         fm = field_map.get(f)
-        if not fm: continue
+        if fm is None: continue
         value = functools.reduce(udf, fm.split('.'), json_obj)
         tsv_obj[f] = value
     return tsv_obj 
@@ -149,8 +149,12 @@ def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
         cmd = vcfanno + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
-def region_query(annot_dir, region, force=False, bed_file=None):
-    region_dir = annot_dir+'_'+region    
+def region_query(annot_dir, region=None, force=False, bed_file=None):
+    if not region: 
+        region_dir = annot_dir+'_'+region 
+    else:
+        region_dir = annot_dir
+
     queried = []
     for fn in glob.glob(os.path.join(region_dir, "*-*", "*.query.txt"), recursive=True):
         queried.append(re.sub(r'.query.txt', '', os.path.basename(fn)))
@@ -264,7 +268,7 @@ def get_info(row):
         info.append(col+"="+str(row[col]))
     return ';'.join(info)
 
-def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=False):
+def union_vcf(data_dir, union_dir, process_flist, nCallers=2, force=False):
     if not os.path.exists(union_dir):
         os.makedirs(union_dir)
     
@@ -289,7 +293,7 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
         skip = False
         for fn in flist:
             caller = get_caller(fn)
-            query_file = os.path.join(data_dir, caller+'_annot_'+region, projectId, re.sub(r'.vcf.gz$', '.query.txt', fn))
+            query_file = os.path.join(data_dir, caller+'_annot', projectId, re.sub(r'.vcf.gz$', '.query.txt', fn))
             if not os.path.exists(query_file):
                 skip = True
                 break
@@ -350,17 +354,17 @@ def union_vcf(region, data_dir, union_dir, process_flist, nCallers=2, force=Fals
         cmd =  sort + "&&" + cat + ' | ' + bgzip + ' && ' + tabix
         run_cmd(cmd)
 
-        # generate bed from dataframe
-        bed_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
-        df_all['START'] = df['POS']
-        df_all['END'] = df['POS'] + df['ALT'].str.len()
-        cols = ['CHROM', 'START', 'END']
-        df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
+        # # generate bed from dataframe
+        # bed_file = os.path.join(union_dir, projectId, '.'.join([do, 'union', 'somatic', evtype, 'bed']))
+        # df_all['START'] = df['POS']
+        # df_all['END'] = df['POS'] + df['ALT'].str.len()
+        # cols = ['CHROM', 'START', 'END']
+        # df_all.to_csv(bed_file+'.csv', index=False, header=False, sep="\t", columns=cols)
         
-        sort = f'sort -k1,1 -k2,2n -V {bed_file}.csv > {bed_file}'
-        rm = f'rm {bed_file}.csv'
-        cmd = sort + "&&" + rm
-        run_cmd(cmd)
+        # sort = f'sort -k1,1 -k2,2n -V {bed_file}.csv > {bed_file}'
+        # rm = f'rm {bed_file}.csv'
+        # cmd = sort + "&&" + rm
+        # run_cmd(cmd)
 
 
 def bam_readcount(bam_dir, union_dir, readcount_dir, ref_fa):
