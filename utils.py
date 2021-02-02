@@ -150,7 +150,7 @@ def annot_vcf(cores, conf, data_dir, annot_dir, force=False, bed_dir=None):
         run_cmd(cmd)
 
 def region_query(annot_dir, region=None, force=False, bed_file=None):
-    if not region: 
+    if region: 
         region_dir = annot_dir+'_'+region 
     else:
         region_dir = annot_dir
