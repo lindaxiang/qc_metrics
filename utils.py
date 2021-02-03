@@ -184,6 +184,7 @@ def region_query(annot_dir, region=None, force=False, bed_file=None):
     #     sed = f'sed "s/^/{prefix}/g" >> {region_dir}.{evtype}.all'
     #     cmd = '|'.join([cat, awk, sed])
     #     run_cmd(cmd)
+    return region_dir
 
 def vcf2tsv(vcf_dir):
     #use bcftools to query the annotated vcf

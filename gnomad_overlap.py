@@ -68,9 +68,9 @@ def main():
     bed_dir = os.path.join("data", "beds")
     for region in ['cds', 'exon', 'protein_coding_promoter', 'protein_coding_ss', 'utr3', 'utr5', 'lncRNA', 'lncRNA_promoter', 'lncRNA_ss', 'small_ncRNA', 'small_ncRNA_promoter']:
         bed_file = os.path.join(bed_dir, '.'.join([region,'bed','gz']))
-        region_query(union_dir, region, args.force, bed_file)
+        region_dir = region_query(union_dir, region, args.force, bed_file)
         # generate tsv output for easy analysis
-        vcf2tsv(union_dir)
+        vcf2tsv(region_dir)
 
 
 if __name__ == "__main__":
