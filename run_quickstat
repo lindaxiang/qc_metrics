@@ -13,30 +13,28 @@ do
         echo "Total donors with $exp $TYPE data: " $( grep ${exp} ${VCFDIR}/union*.${TYPE}.all | awk '{print $2}'|sort -u|wc -l )
 
         declare -A private gnomad
-        echo "Total $TYPE calls of $exp data in all: " $( cat ${VCFDIR}/union.${TYPE}.all | grep -c ${exp} )
         
         for caller in sanger mutect2 sanger,mutect2
         do
         private[$caller]=$( grep $exp ${VCFDIR}/union.${TYPE}.all | awk -v awkvar="$caller" '$9==awkvar'|wc -l)
         gnomad[$caller]=$( grep $exp ${VCFDIR}/union.${TYPE}.all | awk '$11!="."'|awk -v awkvar="$caller" '$9==awkvar'|wc -l)
-        done 
+        done
+        total=$( cat ${VCFDIR}/union.${TYPE}.all | grep -c ${exp} )
         gnomad_all=$( grep $exp ${VCFDIR}/union.${TYPE}.all | awk '$11!="."'| wc -l)
-        echo "Total		${private[sanger]}/${gnomad[sanger]}		${private[mutect2]}/${gnomad[mutect2]}		${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}	$gnomad_all"
-        echo ""
+        echo -e "Total\t${private[sanger]}/${gnomad[sanger]}\t${private[mutect2]}/${gnomad[mutect2]}\t${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}\t$total\t$gnomad_all"
 
         for region in open_access utr5 utr3 cds exon protein_coding_promoter protein_coding_splice_site lncRNA lncRNA_promoter lncRNA_splice_site smallRNA smallRNA_promoter
         do
             declare -A private gnomad
-            echo "Total $TYPE calls of $exp data in ${region}: " $( cat ${VCFDIR}/union_${region}.${TYPE}.all | grep -c ${exp} )
             
             for caller in sanger mutect2 sanger,mutect2
             do
             private[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk -v awkvar="$caller" '$9==awkvar'|wc -l)
             gnomad[$caller]=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'|awk -v awkvar="$caller" '$9==awkvar'|wc -l)
-            done 
+            done
+            total=$( cat ${VCFDIR}/union_${region}.${TYPE}.all | grep -c ${exp} ) 
             gnomad_all=$( grep $exp ${VCFDIR}/union_${region}.${TYPE}.all | awk '$11!="."'| wc -l)
-            echo "$region		${private[sanger]}/${gnomad[sanger]}		${private[mutect2]}/${gnomad[mutect2]}		${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}	$gnomad_all"
-            echo ""
+            echo -e "$region\t${private[sanger]}/${gnomad[sanger]}\t${private[mutect2]}/${gnomad[mutect2]}\t${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}\t$total\t$gnomad_all"
         done
     done
 done
