@@ -23,7 +23,7 @@ do
         gnomad_all=$( grep $exp ${VCFDIR}/union.${TYPE}.all | awk '$11!="."'| wc -l)
         echo -e "Total\t${private[sanger]}/${gnomad[sanger]}\t${private[mutect2]}/${gnomad[mutect2]}\t${private[sanger,mutect2]}/${gnomad[sanger,mutect2]}\t$total\t$gnomad_all"
 
-        for region in open_access utr5 utr3 cds exon protein_coding_promoter protein_coding_splice_site lncRNA lncRNA_promoter lncRNA_splice_site smallRNA smallRNA_promoter
+        for region in cds exon utr3 utr5 protein_coding_promoter protein_coding_splice_site lncRNA_promoter lncRNA lncRNA_splice_site smallRNA smallRNA_promoter open_access
         do
             declare -A private gnomad
             
